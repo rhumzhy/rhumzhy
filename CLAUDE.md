@@ -13,7 +13,9 @@ live at: https://rhumzhy.pages.dev (cloudflare pages, push-to-live from main)
 - no build step, no framework, no dependencies, no npm — ever. the agent is the generator.
 - motion budget: the `rise` reveal on load + honest hover. nothing else.
 - accessible floor: 375px width works, `:focus-visible` on everything interactive, reduced-motion respected.
-- title pattern: `page — rhumzhy`. breadcrumb: `<a class="mark" href="/">← rhumzhy</a>`.
+- title pattern (browser tab only): `page — rhumzhy`. breadcrumb: `<a class="mark" href="/">← rhumzhy</a>` (or `← parent`).
+- **never put the branch name as a heading on its own page.** the breadcrumb locates you; the page never announces itself. post titles are content, not branch names — those stay.
+- the hub is the reference for cleanliness. every page should feel that bare.
 
 ## session protocol
 

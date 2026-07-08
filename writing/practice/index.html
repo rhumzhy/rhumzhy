@@ -10,14 +10,14 @@
     padding:clamp(3rem, 10vh, 6rem) clamp(1.5rem, 9vw, 8rem) 20vh;
   }
   main{ max-width:38rem; }
-  h1{
-    font-size:clamp(1.55rem, 4vw, 2.25rem);
-    font-weight:400;
-    letter-spacing:-0.015em;
-    line-height:1;
-    margin:1.1rem 0 0.9rem;
+  .mark{ display:inline-block; margin-bottom:clamp(2.2rem, 6vh, 3.5rem); }
+  .line{
+    color:var(--muted);
+    font-style:italic;
+    font-size:1rem;
+    letter-spacing:0.01em;
+    margin-bottom:clamp(2.2rem, 6vh, 3.5rem);
   }
-  .line{ color:var(--muted); font-size:1rem; margin-bottom:clamp(2.2rem, 6vh, 3.5rem); }
 
   #posts{ list-style:none; display:flex; flex-direction:column; gap:0.85rem; }
   #posts a{
@@ -55,7 +55,6 @@
 
   <main class="rise">
     <a class="mark" href="/writing/">← writing</a>
-    <h1>practice</h1>
     <p class="line">write, why not</p>
 
     <ul id="posts"></ul>
