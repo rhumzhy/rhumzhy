@@ -14,14 +14,20 @@
   }
   main{ max-width:40rem; }
   .back{ margin-bottom:clamp(1.8rem, 5vh, 3rem); }
-  .empty{ color:var(--muted); font-size:1rem; }
+  nav{
+    display:flex;
+    flex-direction:column;
+    gap:clamp(0.9rem, 2.2vw, 1.4rem);
+  }
 </style>
 </head>
 <body>
 
   <main class="rise">
     <a class="back" href="/" aria-label="back">←</a>
-    <p class="empty">nothing here yet. growing.</p>
+    <nav>
+      <a class="link" href="/experiments/log/">log</a>
+    </nav>
   </main>
 
 </body>

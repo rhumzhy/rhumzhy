@@ -7,7 +7,7 @@
 ## next
 
 - [x] it2 · practice — post template, posts.json, flat archive, shipped empty
-- [ ] it3 · the log — habits.json + hours.json seeded real, calendar grid + hours bars at /experiments/log/
+- [x] it3 · the log — habits.json + hours.json, one year-grid per habit + 30-day hours bars at /experiments/log/
 - [ ] it4 · curation — curation.json + /curation/ list with 5+ real seed items
 - [ ] it5 · sound — mixes.json + /sound/ feed, at least one real mix entry
 - [ ] it6 · predictions — predictions.json + page + brier/calibration, 3 real predictions
@@ -28,3 +28,4 @@
 - 2026-07-08 · it2 · practice shipped — /writing/practice/ flat archive ("write, why not"), _post.html template, empty posts.json; named "practice" not "the practice"; data-reuse principle added to vision
 - 2026-07-08 · it2.1 · no page announces its own name — branch-name headings removed everywhere; "write, why not" set in italics; rule added to claude.md
 - 2026-07-08 · it2.2 · the way back is an arrow alone — breadcrumb labels dropped, .back primitive in base.css (nudges left on hover); rabbit-hole / doet principle added to claude.md
+- 2026-07-08 · it3 · the log shipped — /experiments/log/: one year-grid per habit (perfect day = accent in all three), 30-day hours bars (today accent) + weekly totals; data empty, awaiting first `log:` message
