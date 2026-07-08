@@ -13,9 +13,14 @@ live at: https://rhumzhy.pages.dev (cloudflare pages, push-to-live from main)
 - no build step, no framework, no dependencies, no npm — ever. the agent is the generator.
 - motion budget: the `rise` reveal on load + honest hover. nothing else.
 - accessible floor: 375px width works, `:focus-visible` on everything interactive, reduced-motion respected.
-- title pattern (browser tab only): `page — rhumzhy`. breadcrumb: `<a class="mark" href="/">← rhumzhy</a>` (or `← parent`).
-- **never put the branch name as a heading on its own page.** the breadcrumb locates you; the page never announces itself. post titles are content, not branch names — those stay.
+- title pattern (browser tab only): `page — rhumzhy`.
+- the way back is an arrow alone: `<a class="back" href="/parent/" aria-label="back">←</a>` (`.back` in base.css). no labels, no page names — the arrow points; that's the signifier.
+- **never put the branch name as a heading on its own page.** the page never announces itself. post titles are content, not branch names — those stay.
 - the hub is the reference for cleanliness. every page should feel that bare.
+- design of everyday things is the compass: the least necessary, functional, elegant.
+  natural signifiers over labels; affordances people already sense (an arrow points
+  home, a filled square means done, red means the one thing that matters). the site
+  should feel like a rabbit hole you explore, not a building with signage.
 
 ## session protocol
 

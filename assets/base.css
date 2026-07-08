@@ -37,6 +37,26 @@ a.mark{
 a.mark:hover,
 a.mark:focus-visible{ color:var(--ink); outline:none; }
 
+/* the way back — an arrow alone. it points; that's the label. */
+.back{
+  display:inline-block;
+  font-family:var(--mono);
+  font-size:1rem;
+  line-height:1;
+  color:var(--muted);
+  text-decoration:none;
+  padding:0.4em 0.6em;
+  margin-left:-0.6em;
+  -webkit-tap-highlight-color:transparent;
+  transition:color .28s var(--ease), transform .28s var(--ease);
+}
+.back:hover,
+.back:focus-visible{
+  color:var(--ink);
+  transform:translateX(-0.15em);   /* nudges the way it points */
+  outline:none;
+}
+
 /* the animated link */
 .link{
   position:relative;
@@ -91,5 +111,6 @@ a.mark:focus-visible{ color:var(--ink); outline:none; }
 
 @media (prefers-reduced-motion: reduce){
   .link, .rise{ animation:none; opacity:1; }
-  .link::before, a.mark{ transition:none; }
+  .link::before, a.mark, .back{ transition:none; }
+  .back:hover, .back:focus-visible{ transform:none; }
 }
