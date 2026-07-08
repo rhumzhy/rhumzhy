@@ -1,0 +1,95 @@
+/* rhumzhy — base.css
+   tokens + shared primitives. every page links this;
+   page-specific layout stays inline in each page's <head>. */
+
+:root{
+  --paper:#F6F5F3;   /* quiet paper — not stark white, not cream */
+  --ink:#141414;     /* near-black */
+  --muted:#9A9A94;   /* recedes; marks/labels that shouldn't compete */
+  --accent:#CB244D;  /* raspberry red — the one gesture */
+  --mono:ui-monospace, "SF Mono", Menlo, monospace;
+  --ease:cubic-bezier(.2,.7,.2,1);
+}
+
+*{ margin:0; padding:0; box-sizing:border-box; }
+html,body{ height:100%; }
+
+body{
+  background:var(--paper);
+  color:var(--ink);
+  font-family:-apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing:antialiased;
+  min-height:100vh;
+  min-height:100dvh;          /* honors mobile browser chrome (address bar) */
+}
+
+/* small mono label — dates, types, counts, breadcrumbs */
+.mark{
+  font-family:var(--mono);
+  font-size:0.72rem;
+  letter-spacing:0.2em;
+  color:var(--muted);
+}
+a.mark{
+  text-decoration:none;
+  transition:color .28s var(--ease);
+}
+a.mark:hover,
+a.mark:focus-visible{ color:var(--ink); outline:none; }
+
+/* the animated link */
+.link{
+  position:relative;
+  width:fit-content;
+  color:var(--accent);
+  text-decoration:none;
+  font-size:clamp(1.55rem, 4vw, 2.25rem);
+  font-weight:400;
+  letter-spacing:-0.015em;
+  line-height:1;
+  -webkit-tap-highlight-color:transparent;   /* no grey flash on tap; we supply our own feedback */
+  opacity:0;
+  animation:rise .7s var(--ease) forwards;
+}
+
+/* the draw-in underline */
+.link::before{
+  content:"";
+  position:absolute;
+  left:0; bottom:-0.14em;
+  width:100%; height:2px;
+  background:currentColor;
+  transform:scaleX(0);
+  transform-origin:left;
+  transition:transform .28s var(--ease);
+}
+/* hover (desktop), focus (keyboard), active (touch tap) all reveal it */
+.link:hover::before,
+.link:focus-visible::before,
+.link:active::before{ transform:scaleX(1); }
+.link:focus-visible{ outline:none; }
+
+.link:nth-child(1){ animation-delay:.05s; }
+.link:nth-child(2){ animation-delay:.12s; }
+.link:nth-child(3){ animation-delay:.19s; }
+.link:nth-child(4){ animation-delay:.26s; }
+.link:nth-child(5){ animation-delay:.33s; }
+.link:nth-child(6){ animation-delay:.40s; }
+.link:nth-child(7){ animation-delay:.47s; }
+.link:nth-child(8){ animation-delay:.54s; }
+
+/* the one reveal — apply to anything that should rise on load */
+.rise{
+  opacity:0;
+  animation:rise .7s var(--ease) forwards;
+}
+
+@keyframes rise{
+  from{ opacity:0; transform:translateY(0.5em); }
+  to{ opacity:1; transform:translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce){
+  .link, .rise{ animation:none; opacity:1; }
+  .link::before, a.mark{ transition:none; }
+}

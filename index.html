@@ -4,24 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>rhumzhy</title>
+<link rel="stylesheet" href="/assets/base.css">
 <style>
-  :root{
-    --paper:#F6F5F3;   /* quiet paper — not stark white, not cream */
-    --ink:#141414;     /* near-black */
-    --muted:#9A9A94;   /* reserved */
-    --accent:#CB244D;  /* raspberry red — the one gesture, sampled from reference */
-  }
-
-  *{ margin:0; padding:0; box-sizing:border-box; }
-  html,body{ height:100%; }
-
   body{
-    background:var(--paper);
-    color:var(--ink);
-    font-family:-apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
-    -webkit-font-smoothing:antialiased;
-    min-height:100vh;
-    min-height:100dvh;          /* honors mobile browser chrome (address bar) */
     display:flex;
     flex-direction:column;
     justify-content:center;
@@ -34,54 +19,6 @@
     gap:clamp(0.9rem, 2.2vw, 1.4rem);
     max-width:40rem;
   }
-
-  .link{
-    position:relative;
-    width:fit-content;
-    color:var(--accent);
-    text-decoration:none;
-    font-size:clamp(1.55rem, 4vw, 2.25rem);
-    font-weight:400;
-    letter-spacing:-0.015em;
-    line-height:1;
-    -webkit-tap-highlight-color:transparent;   /* no grey flash on tap; we supply our own feedback */
-    opacity:0;
-    animation:rise .7s cubic-bezier(.2,.7,.2,1) forwards;
-  }
-
-  /* the draw-in underline — your preferred version */
-  .link::before{
-    content:"";
-    position:absolute;
-    left:0; bottom:-0.14em;
-    width:100%; height:2px;
-    background:currentColor;
-    transform:scaleX(0);
-    transform-origin:left;
-    transition:transform .28s cubic-bezier(.2,.7,.2,1);
-  }
-  /* hover (desktop), focus (keyboard), active (touch tap) all reveal it */
-  .link:hover::before,
-  .link:focus-visible::before,
-  .link:active::before{ transform:scaleX(1); }
-  .link:focus-visible{ outline:none; }
-
-  .link:nth-child(1){ animation-delay:.05s; }
-  .link:nth-child(2){ animation-delay:.12s; }
-  .link:nth-child(3){ animation-delay:.19s; }
-  .link:nth-child(4){ animation-delay:.26s; }
-  .link:nth-child(5){ animation-delay:.33s; }
-  .link:nth-child(6){ animation-delay:.40s; }
-
-  @keyframes rise{
-    from{ opacity:0; transform:translateY(0.5em); }
-    to{ opacity:1; transform:translateY(0); }
-  }
-
-  @media (prefers-reduced-motion: reduce){
-    .link{ animation:none; opacity:1; }
-    .link::before{ transition:none; }
-  }
 </style>
 </head>
 <body>
@@ -92,14 +29,14 @@
       · The text between the tags is the label people see.
       · href is where it goes:
           "/work/"                  → a project folder in this same repo
-          "https://something.com"   → any external site (add target/rel like below)
+          "https://something.com"   → any external site (add target/rel)
       Swap, add, or remove lines freely. The page never needs restructuring.
     -->
     <a class="link" href="/work/">work</a>
     <a class="link" href="/writing/">writing</a>
     <a class="link" href="/experiments/">experiments</a>
     <a class="link" href="/sound/">sound</a>
-    <a class="link" href="https://example.com" target="_blank" rel="noopener">curation</a>
+    <a class="link" href="/curation/">curation</a>
   </nav>
 
 </body>
