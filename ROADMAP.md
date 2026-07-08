@@ -6,7 +6,7 @@
 
 ## next
 
-- [ ] it2 · the practice — post template, posts.json, archive page, first real post
+- [x] it2 · practice — post template, posts.json, flat archive, shipped empty
 - [ ] it3 · the log — habits.json + hours.json seeded real, calendar grid + hours bars at /experiments/log/
 - [ ] it4 · curation — curation.json + /curation/ list with 5+ real seed items
 - [ ] it5 · sound — mixes.json + /sound/ feed, at least one real mix entry
@@ -25,3 +25,4 @@
 ## log
 
 - 2026-07-08 · it1 · foundation shipped — base.css, hub refactor, five trunk stubs, curation link internal, vision/roadmap/claude.md
+- 2026-07-08 · it2 · practice shipped — /writing/practice/ flat archive ("write, why not"), _post.html template, empty posts.json; named "practice" not "the practice"; data-reuse principle added to vision

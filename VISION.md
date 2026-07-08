@@ -15,7 +15,7 @@ graceful, never overly complex.
 
 ## the branches
 
-- **the practice** (writing) — one post every day, seth godin style.
+- **practice** (writing) — one post every day, seth godin style. write, why not.
 - **the log** (experiments) — habit tracking (reading, meditation, exercise) and
   daily working hours, rendered beautifully.
 - **predictions** (experiments) — public predictions with confidence; over time,
@@ -32,6 +32,10 @@ graceful, never overly complex.
 - the agent is the static site generator: content files and their json indexes
   are written by hand each session, per the recipes in CLAUDE.md.
 - git is the database: all logs and content live as files in this repo.
+- data is reusable: everything generated (posts, logs, predictions, curations)
+  is stored as clean structured json with iso dates — so any of it can be
+  re-rendered into new things later (streak visuals, stats, averages, whatever).
+  never trap content in markup only.
 - one accent (`--accent`), near-monochrome everything else. lowercase copy.
 - mono (`--mono`) for marks, labels, and data. one load reveal max.
 - accessible floor: mobile responsive, `:focus-visible`, reduced-motion, contrast.

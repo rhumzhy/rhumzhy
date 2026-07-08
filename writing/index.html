@@ -20,7 +20,11 @@
     line-height:1;
     margin:1.1rem 0 clamp(2.2rem, 6vh, 3.5rem);
   }
-  .empty{ color:var(--muted); font-size:1rem; }
+  nav{
+    display:flex;
+    flex-direction:column;
+    gap:clamp(0.9rem, 2.2vw, 1.4rem);
+  }
 </style>
 </head>
 <body>
@@ -28,7 +32,9 @@
   <main class="rise">
     <a class="mark" href="/">← rhumzhy</a>
     <h1>writing</h1>
-    <p class="empty">nothing here yet. growing.</p>
+    <nav>
+      <a class="link" href="/writing/practice/">practice</a>
+    </nav>
   </main>
 
 </body>
