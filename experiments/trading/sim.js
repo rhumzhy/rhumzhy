@@ -55,6 +55,7 @@
     rand = mulberry32(parseInt(s, 16));
     regime = Math.floor(rand() * REGIMES.length);
     price = 1000; candles = []; forming = null; tcount = 0;
+    levels.length = 0;                            /* marks belong to their market */
     for (let i = 0; i < 60 * TICKS_PER_CANDLE; i++) step();   /* the market predates you */
     seedEl.textContent = 'seed ' + s;
     seedEl.href = '?s=' + s;
@@ -173,7 +174,11 @@
   size(); addEventListener('resize', () => { size(); draw(); });
 
   const VISIBLE = 80;
-  let p2y = null;
+  let p2y = null, vLo = 0, vHi = 1;
+  const y2p = y => vLo + ((H - y) / H) * (vHi - vLo);
+
+  /* marked levels — hold to place, hold on one to remove */
+  const levels = [];
 
   const draw = () => {
     ctx.clearRect(0, 0, W, H);
@@ -186,7 +191,24 @@
     lo -= padP; hi += padP;
 
     const cw = (W - GUTTER) / VISIBLE;
+    vLo = lo; vHi = hi;
     p2y = p => H - ((p - lo) / (hi - lo)) * H;
+
+    /* levels sit under the tape */
+    ctx.font = '10px ui-monospace, SF Mono, Menlo, monospace';
+    ctx.textAlign = 'left';
+    for (const lv of levels) {
+      if (lv < lo || lv > hi) continue;
+      ctx.globalAlpha = 0.55;
+      ctx.strokeStyle = MUTED;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(0, p2y(lv)); ctx.lineTo(W - GUTTER, p2y(lv));
+      ctx.stroke();
+      ctx.fillStyle = MUTED;
+      ctx.fillText(lv.toFixed(1), W - GUTTER + 8, p2y(lv) - 3);
+      ctx.globalAlpha = 1;
+    }
 
     view.forEach((c, i) => {
       const x = (i + (VISIBLE - view.length)) * cw + cw / 2;
@@ -245,7 +267,7 @@
 
   /* ---- clock ---- */
   let speed = 1, paused = false, timer = null, lastT = 0;
-  const BASE_MS = 110;
+  const BASE_MS = 420;   /* a candle ~2.5s at 1x — higher-timeframe patience, not arcade */
   const loop = () => {
     const now = performance.now();
     if (!paused) {
@@ -297,10 +319,26 @@
     stats(); draw();
   };
 
+  const toggleLevel = y => {
+    const near = levels.findIndex(lv => p2y && Math.abs(p2y(lv) - y) < 10);
+    if (near >= 0) levels.splice(near, 1);
+    else levels.push(y2p(y));
+    draw();
+  };
+
+  /* quick press trades · press-and-hold marks a level */
+  let holdT = null, held = false, downY = 0;
   cv.addEventListener('pointerdown', e => {
-    if (!p2y) return;
+    downY = e.offsetY; held = false;
+    holdT = setTimeout(() => { held = true; toggleLevel(downY); }, 350);
+  });
+  cv.addEventListener('pointerup', e => {
+    clearTimeout(holdT);
+    if (held || !p2y) return;
     act(e.offsetY < p2y(price) ? 1 : -1);
   });
+  cv.addEventListener('pointerleave', () => clearTimeout(holdT));
+  cv.addEventListener('contextmenu', e => e.preventDefault());
 
   addEventListener('keydown', e => {
     if (e.key === ' ') { e.preventDefault(); setPaused(!paused); return; }
