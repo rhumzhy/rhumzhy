@@ -20,6 +20,7 @@
     flex-wrap:wrap;
   }
   .title{ font-size:1.05rem; color:var(--ink); }
+  .kind{ font-family:var(--mono); font-size:0.72rem; letter-spacing:0.08em; color:var(--muted); }
 
   .trail{ display:flex; gap:0.7rem; align-items:baseline; }
   .v{
@@ -99,7 +100,7 @@
     }).join('');
     return `<li>
       <div class="row">
-        <span class="title">${m.title}</span>
+        <span class="title">${m.title}</span>${m.kind ? `<span class="kind">${m.kind}</span>` : ''}
         <span class="trail">${trail}<span class="time" data-time="${mi}"></span></span>
       </div>
       <div class="line" data-line="${mi}"><div class="track"><div class="fill"></div></div></div>

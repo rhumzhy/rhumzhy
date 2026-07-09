@@ -72,8 +72,8 @@ into one commit. under a minute of user attention.
 1. copy the audio file to `/sound/audio/<slug>-v<N>.mp3` (user provides the file/path;
    must be under 25MB — cloudflare pages per-file limit; suggest compressing if over)
 2. edit `/data/mixes.json` — add version `{"v","date","url":"/sound/audio/<slug>-v<N>.mp3","note"}`
-   to the mix's `versions` (new mix: `{"title","slug","status":"in-progress","versions":[...]}`;
-   master: set `status:"master"`)
+   to the item's `versions` (new item: `{"title","slug","kind":"mix"|"beat"|"song","status":"in-progress","versions":[...]}`;
+   mastered/finished: set `status:"master"` — the final version turns accent)
 3. validate json parses, commit `feat(sound): <slug> v<N>`, push
    the page is the player: clicking a version plays it inline (hairline seek bar, mono time).
 
