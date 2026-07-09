@@ -14,6 +14,18 @@
   main{ width:100%; max-width:64rem; margin:0 auto; }
   .back{ margin-bottom:clamp(1rem, 3vh, 2rem); }
 
+  .modes{ display:flex; gap:1.2rem; margin-bottom:0.8rem; }
+  .mode{
+    background:none; border:0; cursor:pointer; padding:0.2em 0;
+    font-family:var(--mono);
+    font-size:0.72rem;
+    letter-spacing:0.2em;
+    color:var(--muted);
+    -webkit-tap-highlight-color:transparent;
+  }
+  .mode.on{ color:var(--ink); }
+  .mode:hover, .mode:focus-visible{ color:var(--ink); outline:none; }
+
   #cv{
     width:100%;
     height:clamp(320px, 58vh, 540px);
@@ -38,6 +50,9 @@
   button.mark:hover, button.mark:focus-visible{ color:var(--ink); outline:none; }
   a.mark{ padding:0.2em 0; }
 
+  #verdict{ display:block; margin-top:0.8rem; }
+  #verdict .good{ color:var(--accent); }
+
   #hint{ margin-top:0.8rem; color:var(--muted); font-size:0.85rem; }
 
   .empty{ color:var(--muted); font-size:1rem; }
@@ -47,6 +62,7 @@
 
   <main class="rise">
     <a class="back" href="/experiments/" aria-label="back">←</a>
+    <div class="modes" id="modes"></div>
     <canvas id="cv"></canvas>
     <div class="row">
       <span class="mark" id="stats"></span>
@@ -56,6 +72,7 @@
         <a class="mark" id="seed" href="?" aria-label="replay this market"></a>
       </span>
     </div>
+    <span class="mark" id="verdict"></span>
     <p id="hint">above long · below short · press again to close</p>
     <noscript><p class="empty">the market needs javascript.</p></noscript>
   </main>

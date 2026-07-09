@@ -12,7 +12,7 @@
 - [x] it5 · sound — mixes.json + /sound/ version-trail feed, shipped empty
 - [x] it6 · predictions — predictions.json + stream-first page + calibration score, shipped empty
 - [x] it7 · trading sim I — seeded engine + regimes, candle canvas, chart-is-the-control, p&l/dd
-- [ ] it8 · trading sim II — drill modes (swing/scalp/compound/take-profit) + scoring
+- [x] it8 · trading sim II — drill rounds (swing/scalp/compound/exit) + verdicts
 - [ ] it9 · trading sim III — localStorage history, per-mode stats, export/import, polish
 - [ ] it10 · tend the tree — consistency sweep, graduate earned experiments, prune later
 
@@ -38,4 +38,5 @@
 - 2026-07-08 · it6 · predictions shipped — stream first (open with confidence · deadline, resolved ✓ accent / ✗ muted), calibration score in mono beneath once 5 resolved (brier-mapped, 100 prophet / 50 coin flip); shipped empty
 - 2026-07-08 · it6.1 · log v2 — habits store minutes (grids unchanged, done = minutes>0), one 30-day line chart per-habit direct-labeled, work hours categorized ({"building":3,"trading":2}), bars labeled "work hours"; work = deliberate craft effort, habits separate, leisure never logged
 - 2026-07-09 · tooling · /post /log /curate /mix /predict project skills; pretooluse hook makes invalid json uncommittable; sim.js seed param sanitized; noreply email + gitignore hardening
+- 2026-07-09 · it8 · drills shipped — mode row (free · swing · scalp · compound · exit); rounds end in a one-line mono verdict (accent when earned), press to redeal on a fresh seed; swing scored vs best single ride, scalp 90s at 4x, compound trades in thirds (add to 3/3, partials off the top, adds-in-profit scored), exit = auto-entry, you pick the out, scored vs hindsight-best; entry line thickens with size
 - 2026-07-08 · it7 · trading sim I shipped — seeded synthetic market (mulberry32 + gbm + 4 hidden regimes), hollow/solid ink candles on canvas, the chart is the control (above long · below short · again close), entry = accent line, mono stats (equity · % · dd · position), pause/speed/replayable seed, self-retiring first-visit hint; real replay mode queued under later

@@ -1,4 +1,6 @@
-/* trading — pure price action. seeded synthetic market, the chart is the control. */
+/* trading — pure price action. seeded synthetic market, the chart is the control.
+   drills: free · swing · scalp · compound · exit. each drill is a round; a round
+   ends in a one-line verdict; press to redeal. */
 (() => {
   /* ---- seeded market ---- */
   const mulberry32 = a => () => {
@@ -7,17 +9,9 @@
     t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
     return ((t ^ t >>> 14) >>> 0) / 4294967296;
   };
-
+  const newSeed = () => Math.floor(Math.random() * 0xffffff).toString(16).padStart(6, '0');
   const param = new URLSearchParams(location.search).get('s');
-  const seedHex = /^[0-9a-f]{1,8}$/i.test(param || '') ? param.toLowerCase()
-    : Math.floor(Math.random() * 0xffffff).toString(16).padStart(6, '0');
-  const rand = mulberry32(parseInt(seedHex, 16));
-  const normal = () => {
-    let u = 0, v = 0;
-    while (u === 0) u = rand();
-    while (v === 0) v = rand();
-    return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
-  };
+  const firstSeed = /^[0-9a-f]{1,8}$/i.test(param || '') ? param.toLowerCase() : newSeed();
 
   /* hidden regimes — the market changes character without telling you */
   const REGIMES = [
@@ -26,19 +20,23 @@
     { mu: 0, vol: 0.0035 },        /* chop */
     { mu: 0, vol: 0.014 }          /* violence */
   ];
-  let regime = Math.floor(rand() * REGIMES.length);
-  let price = 1000;
+
+  const TICKS_PER_CANDLE = 6;
+  let rand, regime, price, seedHex;
+  let candles, forming, tcount;
+
+  const normal = () => {
+    let u = 0, v = 0;
+    while (u === 0) u = rand();
+    while (v === 0) v = rand();
+    return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+  };
   const tick = () => {
     if (rand() < 0.008) regime = Math.floor(rand() * REGIMES.length);
     const { mu, vol } = REGIMES[regime];
     price *= Math.exp(mu - vol * vol / 2 + vol * normal());
     return price;
   };
-
-  /* ---- candles ---- */
-  const TICKS_PER_CANDLE = 6;
-  const candles = [];
-  let forming = null, tcount = 0;
   const step = () => {
     const p = tick();
     if (!forming) forming = { o: p, h: p, l: p, c: p };
@@ -50,18 +48,110 @@
       forming = null; tcount = 0;
     }
   };
-  for (let i = 0; i < 60 * TICKS_PER_CANDLE; i++) step();   /* the market predates you */
 
-  /* ---- account ---- */
+  const seedEl = document.getElementById('seed');
+  const setMarket = s => {
+    seedHex = s;
+    rand = mulberry32(parseInt(s, 16));
+    regime = Math.floor(rand() * REGIMES.length);
+    price = 1000; candles = []; forming = null; tcount = 0;
+    for (let i = 0; i < 60 * TICKS_PER_CANDLE; i++) step();   /* the market predates you */
+    seedEl.textContent = 'seed ' + s;
+    seedEl.href = '?s=' + s;
+  };
+
+  /* ---- account: a position is a stack of lots ---- */
   const START = 10000;
-  let equity = START, side = 0, entry = 0, qty = 0;
-  let peak = START, maxdd = 0;
+  let equity, lots, dir, peak, maxdd, trades, adds, addsInProfit, autoOpened, exitRealized;
+  const resetAccount = () => {
+    equity = START; lots = []; dir = 0; peak = START; maxdd = 0;
+    trades = 0; adds = 0; addsInProfit = 0; autoOpened = false; exitRealized = null;
+  };
 
-  const openPnl = () => side ? side * qty * (price - entry) : 0;
+  const posQty = () => lots.reduce((s, l) => s + l.qty, 0);
+  const openPnl = () => lots.reduce((s, l) => s + dir * l.qty * (price - l.entry), 0);
+  const avgEntry = () => lots.length ? lots.reduce((s, l) => s + l.entry * l.qty, 0) / posQty() : 0;
   const net = () => equity + openPnl();
+  const openLot = (d, frac) => { if (!lots.length) dir = d; lots.push({ entry: price, qty: equity * frac / price }); };
+  const closeLot = () => {                       /* lifo — take off the top */
+    const l = lots.pop();
+    equity += dir * l.qty * (price - l.entry);
+    trades++;
+    if (!lots.length) dir = 0;
+  };
+  const closeAll = () => { while (lots.length) closeLot(); };
 
-  const open = dir => { side = dir; entry = price; qty = equity / price; hintDone(); };
-  const close = () => { equity += openPnl(); side = 0; };
+  /* ---- drills ---- */
+  const MODES = ['free', 'swing', 'scalp', 'compound', 'exit'];
+  const ROUND = {
+    swing: { len: 200 },
+    scalp: { ms: 90000, speed: 4 },
+    compound: { len: 150 },
+    exit: { len: 120, entryAt: 10 }
+  };
+  let mode = 'free';
+  let roundOn = false, roundStart = 0, roundMs = 0;
+
+  const roundCandles = () => candles.length - roundStart;
+  const closes = () => candles.slice(roundStart).map(c => c.c);
+  const pctf = x => `${x >= 0 ? '+' : ''}${(x * 100).toFixed(2)}%`;
+
+  const verdictEl = document.getElementById('verdict');
+  const startRound = () => {
+    setMarket(newSeed());
+    resetAccount();
+    verdictEl.innerHTML = '';
+    roundOn = mode !== 'free';
+    roundStart = candles.length;
+    roundMs = 0;
+    if (mode === 'scalp') setSpeed(ROUND.scalp.speed);
+    setPaused(false);
+    stats(); draw();
+  };
+
+  const endRound = () => {
+    if (mode === 'exit' && lots.length) exitRealized = openPnl() / START;
+    closeAll();
+    roundOn = false;
+    setPaused(true);
+    const cs = closes();
+    const ret = equity / START - 1;
+    let text = '', good = false;
+
+    if (mode === 'swing') {
+      let minC = Infinity, maxC = -Infinity, bestL = 0, bestS = 0;
+      for (const c of cs) {
+        minC = Math.min(minC, c); maxC = Math.max(maxC, c);
+        bestL = Math.max(bestL, c / minC - 1);
+        bestS = Math.max(bestS, (maxC - c) / maxC);
+      }
+      const bench = Math.max(bestL, bestS);
+      const score = bench > 0 ? Math.max(0, Math.round(ret / bench * 100)) : 0;
+      good = score >= 80;
+      text = `${pctf(ret)} · best ride ${pctf(bench)} · ${score}`;
+    } else if (mode === 'scalp') {
+      good = ret > 0;
+      text = `${pctf(ret)} · ${trades} trade${trades === 1 ? '' : 's'}`;
+    } else if (mode === 'compound') {
+      good = ret > 0 && adds > 0 && addsInProfit === adds;
+      text = `${pctf(ret)} · adds in profit ${addsInProfit}/${adds}`;
+    } else if (mode === 'exit') {
+      const e = lots.length === 0 && exitRealized !== null ? exitRealized : 0;
+      const entryIdx = ROUND.exit.entryAt;
+      const after = cs.slice(entryIdx);
+      const entryP = after.length ? after[0] : price;
+      const best = exitDir > 0
+        ? Math.max(...after) / entryP - 1
+        : 1 - Math.min(...after) / entryP;
+      const score = best > 0 ? Math.min(100, Math.max(0, Math.round(e / best * 100))) : 0;
+      good = score >= 80;
+      text = `exit ${pctf(e)} · best ${pctf(Math.max(best, 0))} · ${score}`;
+    }
+    verdictEl.innerHTML = `<span${good ? ' class="good"' : ''}>${text}</span> · press to redeal`;
+    stats(); draw();
+  };
+
+  let exitDir = 1;   /* direction of the auto-entry in exit mode */
 
   /* ---- canvas ---- */
   const cv = document.getElementById('cv');
@@ -83,7 +173,7 @@
   size(); addEventListener('resize', () => { size(); draw(); });
 
   const VISIBLE = 80;
-  let y2p = null, p2y = null;   /* set each draw */
+  let p2y = null;
 
   const draw = () => {
     ctx.clearRect(0, 0, W, H);
@@ -91,13 +181,12 @@
     if (!view.length) return;
     let lo = Infinity, hi = -Infinity;
     for (const c of view) { lo = Math.min(lo, c.l); hi = Math.max(hi, c.h); }
-    if (side) { lo = Math.min(lo, entry); hi = Math.max(hi, entry); }
+    if (lots.length) { lo = Math.min(lo, avgEntry()); hi = Math.max(hi, avgEntry()); }
     const padP = (hi - lo) * 0.08 || 1;
     lo -= padP; hi += padP;
 
     const cw = (W - GUTTER) / VISIBLE;
     p2y = p => H - ((p - lo) / (hi - lo)) * H;
-    y2p = y => lo + ((H - y) / H) * (hi - lo);
 
     view.forEach((c, i) => {
       const x = (i + (VISIBLE - view.length)) * cw + cw / 2;
@@ -119,12 +208,12 @@
       }
     });
 
-    /* entry — the one color: where you stand */
-    if (side) {
+    /* entry — the one color: where you stand. thickness = size on. */
+    if (lots.length) {
       ctx.strokeStyle = ACCENT;
-      ctx.lineWidth = 1;
+      ctx.lineWidth = lots.length;
       ctx.beginPath();
-      ctx.moveTo(0, p2y(entry)); ctx.lineTo(W - GUTTER, p2y(entry));
+      ctx.moveTo(0, p2y(avgEntry())); ctx.lineTo(W - GUTTER, p2y(avgEntry()));
       ctx.stroke();
     }
 
@@ -145,16 +234,36 @@
     peak = Math.max(peak, cur);
     maxdd = Math.max(maxdd, (peak - cur) / peak);
     const r = (cur / START - 1) * 100;
-    const pos = side ? ` · ${side > 0 ? 'long' : 'short'} ${(openPnl() / equity * 100) >= 0 ? '+' : ''}${(openPnl() / equity * 100).toFixed(2)}` : '';
+    let pos = '';
+    if (lots.length) {
+      const u = mode === 'compound' ? ` ${lots.length}/3` : '';
+      pos = ` · ${dir > 0 ? 'long' : 'short'}${u} ${pctf(openPnl() / START)}`;
+    }
     statsEl.textContent =
       `${Math.round(cur).toLocaleString('en-US')} · ${r >= 0 ? '+' : ''}${r.toFixed(2)}% · dd ${(maxdd * 100).toFixed(1)}%${pos}`;
   };
 
   /* ---- clock ---- */
-  let speed = 1, paused = false, timer = null;
+  let speed = 1, paused = false, timer = null, lastT = 0;
   const BASE_MS = 110;
   const loop = () => {
-    if (!paused) { step(); stats(); draw(); }
+    const now = performance.now();
+    if (!paused) {
+      if (lastT) roundMs += now - lastT;
+      step();
+      if (roundOn) {
+        const cfg = ROUND[mode];
+        if (mode === 'exit' && !autoOpened && roundCandles() >= cfg.entryAt) {
+          exitDir = rand() < 0.5 ? 1 : -1;
+          openLot(exitDir, 1);
+          autoOpened = true;
+        }
+        const done = cfg.ms ? roundMs >= cfg.ms : roundCandles() >= cfg.len;
+        if (done) { endRound(); lastT = now; timer = setTimeout(loop, BASE_MS / speed); return; }
+      }
+      stats(); draw();
+    }
+    lastT = now;
     timer = setTimeout(loop, BASE_MS / speed);
   };
 
@@ -168,29 +277,68 @@
   const hintDone = () => { hintEl.hidden = true; localStorage.setItem('rz.trading.hint', '1'); };
   if (localStorage.getItem('rz.trading.hint')) hintEl.hidden = true;
 
-  const act = y => {
-    if (side) { close(); }
-    else if (p2y) { open(y < p2y(price) ? 1 : -1); }
+  const act = d => {                             /* d: +1 above, -1 below */
+    if (mode !== 'free' && !roundOn) { startRound(); return; }
+    if (mode === 'compound') {
+      if (!lots.length) openLot(d, 1 / 3);
+      else if (d === dir) {
+        if (lots.length < 3) {
+          adds++;
+          if (openPnl() > 0) addsInProfit++;
+          openLot(dir, 1 / 3);
+        }
+      } else closeLot();                         /* partial take, one third off */
+    } else if (mode === 'exit') {
+      if (lots.length) { exitRealized = openPnl() / START; closeAll(); }
+    } else {
+      if (lots.length) closeAll();
+      else { openLot(d, 1); if (mode === 'free') hintDone(); }
+    }
     stats(); draw();
   };
-  cv.addEventListener('pointerdown', e => act(e.offsetY));
+
+  cv.addEventListener('pointerdown', e => {
+    if (!p2y) return;
+    act(e.offsetY < p2y(price) ? 1 : -1);
+  });
 
   addEventListener('keydown', e => {
     if (e.key === ' ') { e.preventDefault(); setPaused(!paused); return; }
     if (e.key >= '1' && e.key <= '3') { setSpeed([1, 2, 4][e.key - 1]); return; }
-    if (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'ArrowRight') {
+    if (e.key === 'ArrowUp') { e.preventDefault(); act(1); }
+    else if (e.key === 'ArrowDown') { e.preventDefault(); act(-1); }
+    else if (e.key === 'ArrowRight') {
       e.preventDefault();
-      if (side) close();
-      else if (e.key === 'ArrowUp') open(1);
-      else if (e.key === 'ArrowDown') open(-1);
-      stats(); draw();
+      if (mode !== 'free' && !roundOn) { startRound(); return; }
+      if (lots.length) {
+        if (mode === 'exit') exitRealized = openPnl() / START;
+        closeAll(); stats(); draw();
+      }
     }
   });
 
   pauseEl.addEventListener('click', () => setPaused(!paused));
   speedEl.addEventListener('click', () => setSpeed(speed === 1 ? 2 : speed === 2 ? 4 : 1));
-  document.getElementById('seed').textContent = 'seed ' + seedHex;
-  document.getElementById('seed').href = '?s=' + seedHex;
 
+  /* ---- mode row ---- */
+  const modesEl = document.getElementById('modes');
+  const renderModes = () => {
+    modesEl.innerHTML = MODES.map(m =>
+      `<button class="mode${m === mode ? ' on' : ''}" data-m="${m}">${m}</button>`
+    ).join('');
+  };
+  modesEl.addEventListener('click', e => {
+    const m = e.target.dataset && e.target.dataset.m;
+    if (!m || m === mode) return;
+    mode = m;
+    hintEl.hidden = mode !== 'free' || !!localStorage.getItem('rz.trading.hint');
+    renderModes();
+    startRound();
+  });
+
+  /* ---- go ---- */
+  renderModes();
+  setMarket(firstSeed);
+  resetAccount();
   stats(); draw(); loop();
 })();
