@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>predictions — rhumzhy</title>
+<link rel="stylesheet" href="/assets/base.css">
+<style>
+  body{
+    padding:clamp(3rem, 10vh, 6rem) clamp(1.5rem, 9vw, 8rem) 20vh;
+  }
+  main{ max-width:38rem; }
+  .back{ margin-bottom:clamp(1.8rem, 5vh, 3rem); }
+
+  .list{ list-style:none; display:flex; flex-direction:column; gap:0.85rem; }
+  .list li{
+    display:flex;
+    align-items:baseline;
+    gap:1.1rem;
+    flex-wrap:wrap;
+    font-size:1.05rem;
+  }
+  .resolved{ margin-top:clamp(1.9rem, 5vh, 2.8rem); }
+  .s{ color:var(--ink); }
+  .wrong .s{ color:var(--muted); }
+  .sign{ font-family:var(--mono); font-size:0.85rem; }
+  .right .sign{ color:var(--accent); }
+  .wrong .sign{ color:var(--muted); }
+
+  .score{ display:block; margin-top:clamp(1.9rem, 5vh, 2.8rem); }
+
+  .empty{ color:var(--muted); font-size:1rem; }
+</style>
+</head>
+<body>
+
+  <main class="rise">
+    <a class="back" href="/experiments/" aria-label="back">←</a>
+    <ul class="list" id="open"></ul>
+    <ul class="list resolved" id="done"></ul>
+    <span class="mark score" id="score"></span>
+    <noscript><p class="empty">the record needs javascript.</p></noscript>
+  </main>
+
+<script>
+(async () => {
+  const preds = await fetch('/data/predictions.json').then(r => r.json());
+  const openEl = document.getElementById('open');
+  const doneEl = document.getElementById('done');
+
+  if (!preds.length) {
+    openEl.outerHTML = '<p class="empty">nothing here yet. growing.</p>';
+    doneEl.remove();
+    return;
+  }
+
+  const year = new Date().getFullYear();
+  const when = d => {
+    const [y, m, day] = d.split('-');
+    return Number(y) === year ? `${m}.${day}` : `${y}.${m}.${day}`;
+  };
+  const pct = c => Math.round(c * 100);
+
+  const open = preds.filter(p => p.outcome === null)
+    .sort((a, b) => a.resolveBy.localeCompare(b.resolveBy));
+  const done = preds.filter(p => p.outcome === true || p.outcome === false)
+    .sort((a, b) => b.resolved.localeCompare(a.resolved));
+
+  openEl.innerHTML = open.map(p =>
+    `<li><span class="s">${p.statement}</span><span class="mark">${pct(p.confidence)} · by ${when(p.resolveBy)}</span></li>`
+  ).join('');
+
+  doneEl.innerHTML = done.map(p => {
+    const cls = p.outcome ? 'right' : 'wrong';
+    const sign = p.outcome ? '✓' : '✗';
+    return `<li class="${cls}"><span class="sign">${sign}</span><span class="s">${p.statement}</span><span class="mark">${pct(p.confidence)}</span></li>`;
+  }).join('');
+  if (!done.length) doneEl.remove();
+
+  /* calibration: brier over resolved, mapped so 100 = prophet, 50 = coin flip */
+  if (done.length >= 5) {
+    const brier = done.reduce((s, p) => s + (p.confidence - (p.outcome ? 1 : 0)) ** 2, 0) / done.length;
+    document.getElementById('score').textContent =
+      `calibration · ${Math.round((1 - 2 * brier) * 100)} — ${done.length} resolved`;
+  }
+})();
+</script>
+
+</body>
+</html>
