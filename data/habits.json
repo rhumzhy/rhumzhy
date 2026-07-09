@@ -1,4 +1,6 @@
 {
   "habits": ["reading", "meditation", "exercise"],
-  "log": {}
+  "log": {
+    "2026-07-08": ["reading"]
+  }
 }
