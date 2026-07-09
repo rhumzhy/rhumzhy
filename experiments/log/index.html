@@ -29,7 +29,10 @@
   .d.today{ box-shadow:inset 0 0 0 1px var(--muted); }
   .d.future{ visibility:hidden; }
 
-  /* hours — last 30 days */
+  /* minutes — one line per habit, last 30 days */
+  #chart{ width:100%; height:7rem; display:block; }
+
+  /* work hours — last 30 days */
   .bars{
     display:flex;
     align-items:flex-end;
@@ -51,8 +54,12 @@
   <main class="rise">
     <a class="back" href="/experiments/" aria-label="back">←</a>
     <div id="habits"></div>
+    <section id="minutes" hidden>
+      <p class="mark">minutes</p>
+      <svg id="chart" viewBox="0 0 600 120" preserveAspectRatio="none" aria-label="minutes per habit, last 30 days"></svg>
+    </section>
     <section id="hours" hidden>
-      <p class="mark">hours</p>
+      <p class="mark">work hours</p>
       <div class="bars" id="bars"></div>
       <p class="mark totals" id="totals"></p>
     </section>
@@ -77,7 +84,8 @@
   start.setDate(jan1.getDate() - ((jan1.getDay() + 6) % 7));   /* back to monday */
   const end = new Date(Y, 11, 31);
 
-  const done = (day, h) => (habits.log[day] || []).includes(h);
+  const mins = (day, h) => (habits.log[day] || {})[h] || 0;
+  const done = (day, h) => mins(day, h) > 0;
   const perfect = day => habits.habits.every(h => done(day, h));
 
   const streak = h => {
@@ -105,15 +113,39 @@
     </section>`;
   }).join('');
 
-  /* ---- hours: last 30 days ---- */
-  const val = v => typeof v === 'number' ? v : (v && v.h) || 0;
-  const at = d => val(hours.log[iso(d)]);
-
+  /* ---- last 30 days, shared by both charts ---- */
   const days = [];
   for (let i = 29; i >= 0; i--) {
     const d = new Date(today); d.setDate(d.getDate() - i);
     days.push(d);
   }
+
+  /* ---- minutes: one line per habit, direct-labeled ---- */
+  const shades = ['#141414', '#6B6B66', '#9A9A94'];
+  const anyMinutes = days.some(d => habits.habits.some(h => mins(iso(d), h) > 0));
+  if (anyMinutes) {
+    const W = 530, H = 120, PAD = 6;
+    const maxM = Math.max(60, ...days.map(d => Math.max(...habits.habits.map(h => mins(iso(d), h)))));
+    const x = i => (i / (days.length - 1)) * W;
+    const y = v => H - PAD - (v / maxM) * (H - 2 * PAD);
+    document.getElementById('chart').innerHTML = habits.habits.map((h, hi) => {
+      const pts = days.map((d, i) => `${x(i).toFixed(1)},${y(mins(iso(d), h)).toFixed(1)}`).join(' ');
+      const last = y(mins(iso(days[days.length - 1]), h));
+      return `<polyline points="${pts}" fill="none" stroke="${shades[hi % 3]}" stroke-width="1.5" vector-effect="non-scaling-stroke"/>
+        <text x="${W + 6}" y="${(last + 3).toFixed(1)}" fill="${shades[hi % 3]}"
+          font-family="ui-monospace, SF Mono, Menlo, monospace" font-size="9">${h}</text>`;
+    }).join('');
+    document.getElementById('minutes').hidden = false;
+  }
+
+  /* ---- work hours: last 30 days ---- */
+  const val = v => {
+    if (typeof v === 'number') return v;
+    if (v && typeof v === 'object')
+      return Object.values(v).reduce((s, x) => s + (typeof x === 'number' ? x : 0), 0);
+    return 0;
+  };
+  const at = d => val(hours.log[iso(d)]);
   const max = Math.max(...days.map(at), 1);
 
   document.getElementById('bars').innerHTML = days.map(d => {

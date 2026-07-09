@@ -50,9 +50,13 @@ into one commit. under a minute of user attention.
 3. prepend `{"date","slug","title","path"}` to `/writing/practice/posts.json`
 4. validate json parses, commit `feat(practice): <slug>`, push
 
-### log habits / hours (from it3)
-1. edit `/data/habits.json` — add `"YYYY-MM-DD": ["reading","meditation","exercise"]` (subset done that day)
-2. edit `/data/hours.json` — add `"YYYY-MM-DD": {"h": 4.5, "note": "..."}` (bare number ok)
+### log habits / work hours (from it3, schema v2 since it7 session)
+1. edit `/data/habits.json` — add `"YYYY-MM-DD": {"reading": 54, "meditation": 10}`
+   (minutes per habit done that day; a habit with minutes > 0 counts as done)
+2. edit `/data/hours.json` — add `"YYYY-MM-DD": {"building": 3, "trading": 2}`
+   (work hours by category; bare number ok = uncategorized total. work = deliberate
+   effort toward the crafts: building, trading, reselling, writing, mixing. the three
+   habits are tracked separately — never double-count them. leisure is never logged.)
 3. validate json parses, commit `data: log YYYY-MM-DD`, push
 
 ### add / resolve a prediction (from it6)
