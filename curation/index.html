@@ -7,22 +7,67 @@
 <link rel="stylesheet" href="/assets/base.css">
 <style>
   body{
-    display:flex;
-    flex-direction:column;
-    justify-content:center;
-    padding:10vh clamp(1.5rem, 9vw, 8rem);
+    padding:clamp(3rem, 10vh, 6rem) clamp(1.5rem, 9vw, 8rem) 20vh;
   }
-  main{ max-width:40rem; }
+  main{ max-width:38rem; }
   .back{ margin-bottom:clamp(1.8rem, 5vh, 3rem); }
+
+  #kept{ list-style:none; display:flex; flex-direction:column; gap:0.85rem; }
+  #kept a{
+    display:flex;
+    align-items:baseline;
+    gap:0.8rem;
+    width:fit-content;
+    color:var(--ink);
+    text-decoration:none;
+    font-size:1.05rem;
+    position:relative;
+    -webkit-tap-highlight-color:transparent;
+  }
+  #kept a::before{
+    content:"";
+    position:absolute;
+    left:0; bottom:-0.14em;
+    width:100%; height:1px;
+    background:currentColor;
+    transform:scaleX(0);
+    transform-origin:left;
+    transition:transform .28s var(--ease);
+  }
+  #kept a:hover::before,
+  #kept a:focus-visible::before,
+  #kept a:active::before{ transform:scaleX(1); }
+  #kept a:focus-visible{ outline:none; }
+
   .empty{ color:var(--muted); font-size:1rem; }
+
+  @media (prefers-reduced-motion: reduce){
+    #kept a::before{ transition:none; }
+  }
 </style>
 </head>
 <body>
 
   <main class="rise">
     <a class="back" href="/" aria-label="back">←</a>
-    <p class="empty">nothing here yet. growing.</p>
+    <ul id="kept"></ul>
+    <noscript><p class="empty">the list needs javascript.</p></noscript>
   </main>
+
+<script>
+  fetch('/data/curation.json')
+    .then(r => r.json())
+    .then(items => {
+      const el = document.getElementById('kept');
+      if (!items.length) {
+        el.outerHTML = '<p class="empty">nothing here yet. growing.</p>';
+        return;
+      }
+      el.innerHTML = items.map(i =>
+        `<li><a href="${i.url}" target="_blank" rel="noopener">${i.title}<span class="mark">${i.type}</span></a></li>`
+      ).join('');
+    });
+</script>
 
 </body>
 </html>

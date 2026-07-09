@@ -8,7 +8,7 @@
 
 - [x] it2 · practice — post template, posts.json, flat archive, shipped empty
 - [x] it3 · the log — habits.json + hours.json, one year-grid per habit + 30-day hours bars at /experiments/log/
-- [ ] it4 · curation — curation.json + /curation/ list with 5+ real seed items
+- [x] it4 · curation — curation.json + /curation/ seamless stream, shipped empty
 - [ ] it5 · sound — mixes.json + /sound/ feed, at least one real mix entry
 - [ ] it6 · predictions — predictions.json + page + brier/calibration, 3 real predictions
 - [ ] it7 · trading sim I — engine (seeded gbm + regimes), candle canvas, play/pause/speed, buy/sell, p&l
@@ -29,3 +29,5 @@
 - 2026-07-08 · it2.1 · no page announces its own name — branch-name headings removed everywhere; "write, why not" set in italics; rule added to claude.md
 - 2026-07-08 · it2.2 · the way back is an arrow alone — breadcrumb labels dropped, .back primitive in base.css (nudges left on hover); rabbit-hole / doet principle added to claude.md
 - 2026-07-08 · it3 · the log shipped — /experiments/log/: one year-grid per habit (perfect day = accent in all three), 30-day hours bars (today accent) + weekly totals; data empty, awaiting first `log:` message
+- 2026-07-08 · it3.1 · hours bars labeled; first habit logged (reading)
+- 2026-07-08 · it4 · curation shipped — seamless single stream, title + tiny type mark only, dates/notes kept in data not display ("flow of water, no logs in it"); shipped empty

@@ -61,9 +61,12 @@ into one commit. under a minute of user attention.
 3. validate json parses, commit `data: prediction <id>`, push
 
 ### add a curation (from it4)
-1. edit `/data/curation.json` — prepend `{"title","type","url","image":null,"note","added"}`
-   (`type` ∈ art | object | website | person | music | text; images small, under `/curation/img/`)
+1. edit `/data/curation.json` — prepend `{"title","type","url","note","added"}`
+   (`type` ∈ art | object | website | person | music | text)
 2. validate json parses, commit `data: curate <title>`, push
+   note: the page shows title + tiny type only — seamless stream, no dates/notes
+   in the display (they stay in the data for reuse). no images unless one truly
+   earns it later.
 
 ### add a mix version (from it5)
 1. edit `/data/mixes.json` — add version `{"v","date","url","note"}` to the mix's `versions`
