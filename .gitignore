@@ -1,0 +1,7 @@
+# local claude config never ships
+.claude/settings.local.json
+
+# raw audio working files — only finished mp3s under /sound/audio/ are published
+*.wav
+*.aiff
+*.flac

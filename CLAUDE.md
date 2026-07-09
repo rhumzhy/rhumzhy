@@ -81,6 +81,15 @@ into one commit. under a minute of user attention.
 3. validate json parses, commit `feat(sound): <slug> v<N>`, push
    the page is the player: clicking a version plays it inline (hairline seek bar, mono time).
 
+## public-repo cautions
+
+- everything here is public: never log absences ahead of time (habits/hours reveal
+  daily patterns), only upload audio with rights cleared, no personal identifiers in data.
+- the pages render json with innerHTML — safe ONLY while every byte of json is
+  self-authored. before any visitor-written data ever lands (mix feedback worker),
+  that rendering must be hardened (escape or textContent).
+- commit author uses the github noreply address; keep it that way.
+
 ## verification
 
 no local server — iterate live.
