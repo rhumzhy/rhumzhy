@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 .claude/hooks/validate-json.py",
+            "timeout": 15,
+            "statusMessage": "validating site json"
+          }
+        ]
+      }
+    ]
+  }
+}

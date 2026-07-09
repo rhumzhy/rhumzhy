@@ -8,8 +8,9 @@
     return ((t ^ t >>> 14) >>> 0) / 4294967296;
   };
 
-  const seedHex = (new URLSearchParams(location.search).get('s') ||
-    Math.floor(Math.random() * 0xffffff).toString(16).padStart(6, '0'));
+  const param = new URLSearchParams(location.search).get('s');
+  const seedHex = /^[0-9a-f]{1,8}$/i.test(param || '') ? param.toLowerCase()
+    : Math.floor(Math.random() * 0xffffff).toString(16).padStart(6, '0');
   const rand = mulberry32(parseInt(seedHex, 16));
   const normal = () => {
     let u = 0, v = 0;

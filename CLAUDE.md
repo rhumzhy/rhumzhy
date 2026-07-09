@@ -42,7 +42,10 @@ into one commit. under a minute of user attention.
 
 ## recipes
 
-(recipes are added here as each branch ships. exact files, exact steps.)
+the recipes below also exist as project skills (`.claude/skills/`): /post, /log,
+/curate, /mix, /predict — prefer invoking the skill; these paragraphs are the
+reference the skills are built from. a pretooluse hook (`.claude/hooks/validate-json.py`,
+wired in `.claude/settings.json`) blocks any git commit while site json is invalid.
 
 ### add a post (from it2)
 1. copy `/writing/practice/_post.html` → `/writing/practice/YYYY/MM/DD-slug.html`
