@@ -11,13 +11,14 @@
 - [x] it4 · curation — curation.json + /curation/ seamless stream, shipped empty
 - [x] it5 · sound — mixes.json + /sound/ version-trail feed, shipped empty
 - [x] it6 · predictions — predictions.json + stream-first page + calibration score, shipped empty
-- [ ] it7 · trading sim I — engine (seeded gbm + regimes), candle canvas, play/pause/speed, buy/sell, p&l
+- [x] it7 · trading sim I — seeded engine + regimes, candle canvas, chart-is-the-control, p&l/dd
 - [ ] it8 · trading sim II — drill modes (swing/scalp/compound/take-profit) + scoring
 - [ ] it9 · trading sim III — localStorage history, per-mode stats, export/import, polish
 - [ ] it10 · tend the tree — consistency sweep, graduate earned experiments, prune later
 
 ## later
 
+- trading sim: real replay mode — anonymous random windows of real historical candles committed as data, identity hidden; pressure-test subskill transfer
 - mix feedback/scoring (tiny cloudflare worker + kv, only when earned)
 - more data ideas (unnamed — only if a real one appears)
 - publish trading sim stats publicly (if the data earns it)
@@ -35,3 +36,5 @@
 - 2026-07-08 · it5.1 · sound is a player — audio files live in repo (/sound/audio/), clicking a version plays inline: hairline accent seek bar, mono time; no external hosts
 - 2026-07-08 · it5.2 · sound holds kinds — mix | beat | song mark next to titles (masters via status, final version accent)
 - 2026-07-08 · it6 · predictions shipped — stream first (open with confidence · deadline, resolved ✓ accent / ✗ muted), calibration score in mono beneath once 5 resolved (brier-mapped, 100 prophet / 50 coin flip); shipped empty
+- 2026-07-08 · it6.1 · log v2 — habits store minutes (grids unchanged, done = minutes>0), one 30-day line chart per-habit direct-labeled, work hours categorized ({"building":3,"trading":2}), bars labeled "work hours"; work = deliberate craft effort, habits separate, leisure never logged
+- 2026-07-08 · it7 · trading sim I shipped — seeded synthetic market (mulberry32 + gbm + 4 hidden regimes), hollow/solid ink candles on canvas, the chart is the control (above long · below short · again close), entry = accent line, mono stats (equity · % · dd · position), pause/speed/replayable seed, self-retiring first-visit hint; real replay mode queued under later

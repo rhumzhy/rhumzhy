@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>trading — rhumzhy</title>
+<link rel="stylesheet" href="/assets/base.css">
+<style>
+  body{
+    padding:clamp(2rem, 6vh, 4rem) clamp(1rem, 5vw, 5rem) 10vh;
+    display:flex;
+    flex-direction:column;
+  }
+  main{ width:100%; max-width:64rem; margin:0 auto; }
+  .back{ margin-bottom:clamp(1rem, 3vh, 2rem); }
+
+  #cv{
+    width:100%;
+    height:clamp(320px, 58vh, 540px);
+    display:block;
+    touch-action:none;
+    cursor:crosshair;
+  }
+
+  .row{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    gap:1.2rem;
+    flex-wrap:wrap;
+    margin-top:0.8rem;
+  }
+  .ctrl{ display:flex; gap:1.2rem; align-items:baseline; }
+  button.mark{
+    background:none; border:0; cursor:pointer; padding:0.2em 0;
+    -webkit-tap-highlight-color:transparent;
+  }
+  button.mark:hover, button.mark:focus-visible{ color:var(--ink); outline:none; }
+  a.mark{ padding:0.2em 0; }
+
+  #hint{ margin-top:0.8rem; color:var(--muted); font-size:0.85rem; }
+
+  .empty{ color:var(--muted); font-size:1rem; }
+</style>
+</head>
+<body>
+
+  <main class="rise">
+    <a class="back" href="/experiments/" aria-label="back">←</a>
+    <canvas id="cv"></canvas>
+    <div class="row">
+      <span class="mark" id="stats"></span>
+      <span class="ctrl">
+        <button class="mark" id="pause" aria-label="pause or resume">‖</button>
+        <button class="mark" id="speed" aria-label="speed">1x</button>
+        <a class="mark" id="seed" href="?" aria-label="replay this market"></a>
+      </span>
+    </div>
+    <p id="hint">above long · below short · press again to close</p>
+    <noscript><p class="empty">the market needs javascript.</p></noscript>
+  </main>
+
+<script src="/experiments/trading/sim.js"></script>
+
+</body>
+</html>
