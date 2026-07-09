@@ -12,8 +12,8 @@
   main{ max-width:38rem; }
   .back{ margin-bottom:clamp(1.8rem, 5vh, 3rem); }
 
-  #mixes{ list-style:none; display:flex; flex-direction:column; gap:0.85rem; }
-  #mixes li{
+  #mixes{ list-style:none; display:flex; flex-direction:column; gap:1.1rem; }
+  .row{
     display:flex;
     align-items:baseline;
     gap:1.1rem;
@@ -21,14 +21,15 @@
   }
   .title{ font-size:1.05rem; color:var(--ink); }
 
-  .trail{ display:flex; gap:0.7rem; }
+  .trail{ display:flex; gap:0.7rem; align-items:baseline; }
   .v{
     position:relative;
     font-family:var(--mono);
     font-size:0.72rem;
     letter-spacing:0.08em;
     color:var(--muted);
-    text-decoration:none;
+    background:none; border:0; cursor:pointer;
+    padding:0.2em 0;
     -webkit-tap-highlight-color:transparent;
   }
   .v.latest{ color:var(--ink); }
@@ -36,7 +37,7 @@
   .v::before{
     content:"";
     position:absolute;
-    left:0; bottom:-0.2em;
+    left:0; bottom:0;
     width:100%; height:1px;
     background:currentColor;
     transform:scaleX(0);
@@ -45,8 +46,22 @@
   }
   .v:hover::before,
   .v:focus-visible::before,
-  .v:active::before{ transform:scaleX(1); }
+  .v.playing::before{ transform:scaleX(1); }
   .v:focus-visible{ outline:none; }
+
+  .time{ font-family:var(--mono); font-size:0.72rem; letter-spacing:0.08em; color:var(--muted); }
+
+  /* the hairline — appears under the mix that's playing, click to seek */
+  .line{
+    display:none;
+    width:100%;
+    padding:0.5em 0;
+    cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .line.active{ display:block; }
+  .line .track{ height:2px; background:rgba(20,20,20,0.1); }
+  .line .fill{ height:100%; width:0%; background:var(--accent); }
 
   .empty{ color:var(--muted); font-size:1rem; }
 
@@ -60,30 +75,84 @@
   <main class="rise">
     <a class="back" href="/" aria-label="back">←</a>
     <ul id="mixes"></ul>
-    <noscript><p class="empty">the feed needs javascript.</p></noscript>
+    <noscript><p class="empty">the player needs javascript.</p></noscript>
   </main>
 
 <script>
-  fetch('/data/mixes.json')
-    .then(r => r.json())
-    .then(mixes => {
-      const el = document.getElementById('mixes');
-      if (!mixes.length) {
-        el.outerHTML = '<p class="empty">nothing here yet. growing.</p>';
+(async () => {
+  const mixes = await fetch('/data/mixes.json').then(r => r.json());
+  const el = document.getElementById('mixes');
+  if (!mixes.length) {
+    el.outerHTML = '<p class="empty">nothing here yet. growing.</p>';
+    return;
+  }
+
+  const latest = m => m.versions[m.versions.length - 1];
+  mixes.sort((a, b) => latest(b).date.localeCompare(latest(a).date));
+
+  el.innerHTML = mixes.map((m, mi) => {
+    const trail = m.versions.map((v, vi) => {
+      const last = vi === m.versions.length - 1;
+      const cls = ['v'];
+      if (last) cls.push(m.status === 'master' ? 'master' : 'latest');
+      return `<button class="${cls.join(' ')}" data-mix="${mi}" data-v="${vi}" aria-label="play ${m.title} v${v.v}">v${v.v}</button>`;
+    }).join('');
+    return `<li>
+      <div class="row">
+        <span class="title">${m.title}</span>
+        <span class="trail">${trail}<span class="time" data-time="${mi}"></span></span>
+      </div>
+      <div class="line" data-line="${mi}"><div class="track"><div class="fill"></div></div></div>
+    </li>`;
+  }).join('');
+
+  const audio = new Audio();
+  let current = null;   /* the .v button that owns the audio */
+
+  const fmt = s => isFinite(s) ? `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}` : '';
+
+  document.querySelectorAll('.v').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const m = mixes[btn.dataset.mix], v = m.versions[btn.dataset.v];
+      if (current === btn) {
+        audio.paused ? audio.play() : audio.pause();
         return;
       }
-      const latest = m => m.versions[m.versions.length - 1];
-      mixes.sort((a, b) => latest(b).date.localeCompare(latest(a).date));
-      el.innerHTML = mixes.map(m => {
-        const trail = m.versions.map((v, i) => {
-          const last = i === m.versions.length - 1;
-          const cls = ['v'];
-          if (last) cls.push(m.status === 'master' ? 'master' : 'latest');
-          return `<a class="${cls.join(' ')}" href="${v.url}" target="_blank" rel="noopener">v${v.v}</a>`;
-        }).join('');
-        return `<li><span class="title">${m.title}</span><span class="trail">${trail}</span></li>`;
-      }).join('');
+      if (current) current.classList.remove('playing');
+      document.querySelectorAll('.line').forEach(l => l.classList.remove('active'));
+      document.querySelectorAll('.time').forEach(t => t.textContent = '');
+      current = btn;
+      btn.classList.add('playing');
+      document.querySelector(`[data-line="${btn.dataset.mix}"]`).classList.add('active');
+      audio.src = v.url;
+      audio.play();
     });
+  });
+
+  audio.addEventListener('timeupdate', () => {
+    if (!current) return;
+    const mi = current.dataset.mix;
+    document.querySelector(`[data-line="${mi}"] .fill`).style.width =
+      audio.duration ? `${(audio.currentTime / audio.duration) * 100}%` : '0%';
+    document.querySelector(`[data-time="${mi}"]`).textContent =
+      `${fmt(audio.currentTime)} / ${fmt(audio.duration)}`;
+  });
+
+  audio.addEventListener('ended', () => {
+    if (!current) return;
+    current.classList.remove('playing');
+  });
+  audio.addEventListener('play', () => current && current.classList.add('playing'));
+  audio.addEventListener('pause', () => current && current.classList.remove('playing'));
+
+  document.querySelectorAll('.line').forEach(line => {
+    line.addEventListener('click', e => {
+      if (!audio.duration || !current || line.dataset.line !== current.dataset.mix) return;
+      const r = line.querySelector('.track').getBoundingClientRect();
+      audio.currentTime = ((e.clientX - r.left) / r.width) * audio.duration;
+    });
+  });
+})();
 </script>
 
 </body>

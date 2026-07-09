@@ -69,9 +69,13 @@ into one commit. under a minute of user attention.
    earns it later.
 
 ### add a mix version (from it5)
-1. edit `/data/mixes.json` — add version `{"v","date","url","note"}` to the mix's `versions`
-   (new mix: `{"title","slug","status":"in-progress","versions":[...]}`; master: set `status:"master"`)
-2. validate json parses, commit `data: mix <slug> v<N>`, push
+1. copy the audio file to `/sound/audio/<slug>-v<N>.mp3` (user provides the file/path;
+   must be under 25MB — cloudflare pages per-file limit; suggest compressing if over)
+2. edit `/data/mixes.json` — add version `{"v","date","url":"/sound/audio/<slug>-v<N>.mp3","note"}`
+   to the mix's `versions` (new mix: `{"title","slug","status":"in-progress","versions":[...]}`;
+   master: set `status:"master"`)
+3. validate json parses, commit `feat(sound): <slug> v<N>`, push
+   the page is the player: clicking a version plays it inline (hairline seek bar, mono time).
 
 ## verification
 

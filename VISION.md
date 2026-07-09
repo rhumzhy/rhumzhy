@@ -23,6 +23,7 @@ graceful, never overly complex.
 - **trading sim** (experiments) — practice trading on pure synthetic price action;
   drill sub-skills: swings, scalps, compounding, taking profit.
 - **mixes & masters** (sound) — every version of every mix, progress in public.
+  audio files live in the repo (`/sound/audio/`, ≤25MB each); the page is the player.
   visitor feedback/scoring: deferred until earned (tiny worker later).
 - **more data ideas** — parked. only build when a real one appears.
 
