@@ -14,7 +14,7 @@
 - [x] it7 · trading sim I — seeded engine + regimes, candle canvas, chart-is-the-control, p&l/dd
 - [x] it8 · trading sim II — drill rounds (swing/scalp/compound/exit) + verdicts
 - [x] it9 · trading sim III — round record in localStorage, per-mode summary panel, export/import
-- [ ] it10 · trading sim IV — top-down: timeframe row (e.g. 1d · 4h · 1h · 5m) aggregating the same market, marked levels persist across timeframes; mark up high, execute low — matches how the user actually trades
+- [x] it10 · trading sim IV — top-down: 1M · 1w · 1d · 4h · 1h · 5m over one market, adaptive pacing, levels persist across views
 - [ ] it11 · tend the tree — consistency sweep, graduate earned experiments, prune later
 
 ## later
@@ -39,6 +39,7 @@
 - 2026-07-08 · it6 · predictions shipped — stream first (open with confidence · deadline, resolved ✓ accent / ✗ muted), calibration score in mono beneath once 5 resolved (brier-mapped, 100 prophet / 50 coin flip); shipped empty
 - 2026-07-08 · it6.1 · log v2 — habits store minutes (grids unchanged, done = minutes>0), one 30-day line chart per-habit direct-labeled, work hours categorized ({"building":3,"trading":2}), bars labeled "work hours"; work = deliberate craft effort, habits separate, leisure never logged
 - 2026-07-09 · tooling · /post /log /curate /mix /predict project skills; pretooluse hook makes invalid json uncommittable; sim.js seed param sanitized; noreply email + gitignore hardening
+- 2026-07-12 · it10 · top-down shipped — timeframe row 1M · 1w · 1d · 4h · 1h · 5m, one market aggregated truly (5m live tape + ~3y daily pre-history for the HTFs), time moves at the pace of the watched timeframe (capped at daily rate for 1w/1M), levels persist across views, vol recalibrated to scale honestly (~0.15% 5m → ~2.5% 1d → ~14% 1M), drills inherit their start timeframe (scalp forces 5m), record rounds now store tf
 - 2026-07-12 · it9 · the record shipped — every drill round saved locally (date · mode · seed · return · dd · score), "record" in the control cluster unfolds per-mode lines (rounds · win% · avg return · best), export/import json so nothing is trapped; seeds kept so any recorded market can be replayed
 - 2026-07-09 · it8.1 · sim matches the trader — quick press trades, press-and-hold marks a level (hold again removes; levels reset per market); base pace slowed ~4x (candle ~2.5s at 1x, higher-timeframe feel); top-down timeframe view queued as it10
 - 2026-07-09 · it8 · drills shipped — mode row (free · swing · scalp · compound · exit); rounds end in a one-line mono verdict (accent when earned), press to redeal on a fresh seed; swing scored vs best single ride, scalp 90s at 4x, compound trades in thirds (add to 3/3, partials off the top, adds-in-profit scored), exit = auto-entry, you pick the out, scored vs hindsight-best; entry line thickens with size

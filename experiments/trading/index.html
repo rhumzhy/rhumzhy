@@ -14,7 +14,15 @@
   main{ width:100%; max-width:64rem; margin:0 auto; }
   .back{ margin-bottom:clamp(1rem, 3vh, 2rem); }
 
-  .modes{ display:flex; gap:1.2rem; margin-bottom:0.8rem; }
+  .rows{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    gap:1.2rem;
+    flex-wrap:wrap;
+    margin-bottom:0.8rem;
+  }
+  .modes, .tfs{ display:flex; gap:1.2rem; }
   .mode{
     background:none; border:0; cursor:pointer; padding:0.2em 0;
     font-family:var(--mono);
@@ -73,7 +81,10 @@
 
   <main class="rise">
     <a class="back" href="/experiments/" aria-label="back">←</a>
-    <div class="modes" id="modes"></div>
+    <div class="rows">
+      <div class="modes" id="modes"></div>
+      <div class="tfs" id="tfs"></div>
+    </div>
     <canvas id="cv"></canvas>
     <div class="row">
       <span class="mark" id="stats"></span>
