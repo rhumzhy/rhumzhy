@@ -117,7 +117,7 @@
     setPaused(true);
     const cs = closes();
     const ret = equity / START - 1;
-    let text = '', good = false;
+    let text = '', good = false, roundScore = null;
 
     if (mode === 'swing') {
       let minC = Infinity, maxC = -Infinity, bestL = 0, bestS = 0;
@@ -129,6 +129,7 @@
       const bench = Math.max(bestL, bestS);
       const score = bench > 0 ? Math.max(0, Math.round(ret / bench * 100)) : 0;
       good = score >= 80;
+      roundScore = score;
       text = `${pctf(ret)} · best ride ${pctf(bench)} · ${score}`;
     } else if (mode === 'scalp') {
       good = ret > 0;
@@ -146,13 +147,60 @@
         : 1 - Math.min(...after) / entryP;
       const score = best > 0 ? Math.min(100, Math.max(0, Math.round(e / best * 100))) : 0;
       good = score >= 80;
+      roundScore = score;
       text = `exit ${pctf(e)} · best ${pctf(Math.max(best, 0))} · ${score}`;
     }
     verdictEl.innerHTML = `<span${good ? ' class="good"' : ''}>${text}</span> · press to redeal`;
+    saveRound({
+      d: new Date().toISOString().slice(0, 10),
+      m: mode, s: seedHex,
+      ret: +ret.toFixed(4), dd: +maxdd.toFixed(4),
+      trades, score: roundScore, adds, addsHit: addsInProfit
+    });
     stats(); draw();
   };
 
   let exitDir = 1;   /* direction of the auto-entry in exit mode */
+
+  /* ---- the record: drill rounds, kept on this device ---- */
+  const KEY = 'rz.trading.v1';
+  const loadRec = () => {
+    try {
+      const r = JSON.parse(localStorage.getItem(KEY) || '{}');
+      return Array.isArray(r.rounds) ? r.rounds : [];
+    } catch (e) { return []; }
+  };
+  const saveRec = rounds => localStorage.setItem(KEY, JSON.stringify({ rounds }));
+
+  const recEl = document.getElementById('rec');
+  const recListEl = document.getElementById('reclist');
+  const renderRec = () => {
+    const rec = loadRec();
+    const rows = MODES.slice(1).map(m => {
+      const rs = rec.filter(r => r.m === m);
+      if (!rs.length) return '';
+      const n = rs.length;
+      const win = Math.round(rs.filter(r => +r.ret > 0).length / n * 100);
+      const avg = rs.reduce((s, r) => s + (+r.ret || 0), 0) / n;
+      let extra = '';
+      if (m === 'swing') extra = `best ${Math.max(...rs.map(r => +r.score || 0))}`;
+      else if (m === 'scalp') extra = `best ${pctf(Math.max(...rs.map(r => +r.ret || 0)))}`;
+      else if (m === 'compound') {
+        const a = rs.reduce((s, r) => s + (+r.adds || 0), 0);
+        const h = rs.reduce((s, r) => s + (+r.addsHit || 0), 0);
+        extra = `adds ${h}/${a}`;
+      } else if (m === 'exit') extra = `avg ${Math.round(rs.reduce((s, r) => s + (+r.score || 0), 0) / n)}`;
+      return `<li><span class="rname">${m}</span>${n} · ${win}% · ${pctf(avg)} · ${extra}</li>`;
+    }).filter(Boolean);
+    recListEl.innerHTML = rows.length ? rows.join('') : '<li>no rounds yet.</li>';
+  };
+
+  const saveRound = round => {
+    const rec = loadRec();
+    rec.push(round);
+    saveRec(rec);
+    if (!recEl.hidden) renderRec();
+  };
 
   /* ---- canvas ---- */
   const cv = document.getElementById('cv');
@@ -357,6 +405,38 @@
 
   pauseEl.addEventListener('click', () => setPaused(!paused));
   speedEl.addEventListener('click', () => setSpeed(speed === 1 ? 2 : speed === 2 ? 4 : 1));
+
+  /* record panel */
+  document.getElementById('rectoggle').addEventListener('click', () => {
+    recEl.hidden = !recEl.hidden;
+    if (!recEl.hidden) renderRec();
+  });
+  document.getElementById('rexport').addEventListener('click', () => {
+    const blob = new Blob([JSON.stringify({ rounds: loadRec() }, null, 1)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'trading-record.json';
+    a.click();
+    URL.revokeObjectURL(a.href);
+  });
+  const fileEl = document.getElementById('rfile');
+  document.getElementById('rimport').addEventListener('click', () => fileEl.click());
+  fileEl.addEventListener('change', () => {
+    const f = fileEl.files[0];
+    if (!f) return;
+    f.text().then(t => {
+      try {
+        const incoming = JSON.parse(t);
+        const rounds = Array.isArray(incoming.rounds) ? incoming.rounds : [];
+        const seen = new Set(loadRec().map(r => JSON.stringify(r)));
+        const merged = loadRec().concat(rounds.filter(r => !seen.has(JSON.stringify(r))));
+        merged.sort((a, b) => String(a.d).localeCompare(String(b.d)));
+        saveRec(merged);
+        renderRec();
+      } catch (e) { /* not a record file — ignore */ }
+      fileEl.value = '';
+    });
+  });
 
   /* ---- mode row ---- */
   const modesEl = document.getElementById('modes');

@@ -53,6 +53,17 @@
   #verdict{ display:block; margin-top:0.8rem; }
   #verdict .good{ color:var(--accent); }
 
+  #rec{ margin-top:1.2rem; }
+  #reclist{ list-style:none; display:flex; flex-direction:column; gap:0.5rem; }
+  #reclist li{
+    font-family:var(--mono);
+    font-size:0.72rem;
+    letter-spacing:0.08em;
+    color:var(--ink);
+  }
+  .rname{ display:inline-block; min-width:7em; color:var(--muted); }
+  .recio{ margin-top:0.9rem; display:flex; gap:1.2rem; }
+
   #hint{ margin-top:0.8rem; color:var(--muted); font-size:0.85rem; }
 
   .empty{ color:var(--muted); font-size:1rem; }
@@ -70,9 +81,18 @@
         <button class="mark" id="pause" aria-label="pause or resume">‖</button>
         <button class="mark" id="speed" aria-label="speed">1x</button>
         <a class="mark" id="seed" href="?" aria-label="replay this market"></a>
+        <button class="mark" id="rectoggle" aria-label="show record">record</button>
       </span>
     </div>
     <span class="mark" id="verdict"></span>
+    <div id="rec" hidden>
+      <ul id="reclist"></ul>
+      <p class="recio">
+        <button class="mark" id="rexport">export</button>
+        <button class="mark" id="rimport">import</button>
+        <input type="file" id="rfile" accept="application/json" hidden>
+      </p>
+    </div>
     <p id="hint">above long · below short · again to close · hold to mark a level</p>
     <noscript><p class="empty">the market needs javascript.</p></noscript>
   </main>
