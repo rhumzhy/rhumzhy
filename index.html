@@ -13,31 +13,98 @@
     padding:10vh clamp(1.5rem, 9vw, 8rem);
   }
 
+  .hub{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:3rem;
+    width:100%;
+  }
+
   nav{
     display:flex;
     flex-direction:column;
     gap:clamp(0.9rem, 2.2vw, 1.4rem);
-    max-width:40rem;
+  }
+
+  /* the ouroboros — the site's own symbol, drawn in type */
+  .ouro{
+    font-family:var(--mono);
+    font-size:clamp(9px, 1.15vw, 13px);
+    line-height:1.15;
+    color:var(--muted);
+    user-select:none;
+    opacity:0;
+    animation:rise .7s var(--ease) .45s forwards;
+  }
+
+  @media (max-width:760px){
+    .ouro{ display:none; }   /* the phone hub stays pure words */
+  }
+  @media (prefers-reduced-motion: reduce){
+    .ouro{ animation:none; opacity:1; }
   }
 </style>
 </head>
 <body>
 
-  <nav>
-    <!--
-      Each line is one destination.
-      · The text between the tags is the label people see.
-      · href is where it goes:
-          "/work/"                  → a project folder in this same repo
-          "https://something.com"   → any external site (add target/rel)
-      Swap, add, or remove lines freely. The page never needs restructuring.
-    -->
-    <a class="link" href="/work/">work</a>
-    <a class="link" href="/writing/">writing</a>
-    <a class="link" href="/experiments/">experiments</a>
-    <a class="link" href="/sound/">sound</a>
-    <a class="link" href="/curation/">curation</a>
-  </nav>
+  <div class="hub">
+    <nav>
+      <!--
+        Each line is one destination.
+        · The text between the tags is the label people see.
+        · href is where it goes:
+            "/work/"                  → a project folder in this same repo
+            "https://something.com"   → any external site (add target/rel)
+        Swap, add, or remove lines freely. The page never needs restructuring.
+      -->
+      <a class="link" href="/work/">work</a>
+      <a class="link" href="/writing/">writing</a>
+      <a class="link" href="/experiments/">experiments</a>
+      <a class="link" href="/sound/">sound</a>
+      <a class="link" href="/curation/">curation</a>
+    </nav>
+
+    <pre class="ouro" id="ouro" aria-hidden="true"></pre>
+  </div>
+
+<script>
+(() => {
+  const el = document.getElementById('ouro');
+  if (!el) return;
+
+  const ROWS = 19, COLS = 44, SEG = 96, GAP = 4;
+  const CX = (COLS - 1) / 2, CY = (ROWS - 1) / 2;
+
+  const frame = phase => {
+    const g = Array.from({ length: ROWS }, () => Array(COLS).fill(' '));
+    const R = 7.6 * (1 + 0.025 * Math.sin(phase * 3));   /* it breathes */
+    for (let i = GAP; i < SEG; i++) {                    /* the gap is the open mouth */
+      const t = phase + (i / SEG) * Math.PI * 2;
+      const x = Math.round(CX + Math.cos(t) * R * 2.05);
+      const y = Math.round(CY + Math.sin(t) * R);
+      if (y < 0 || y >= ROWS || x < 0 || x >= COLS) continue;
+      const f = i / SEG;
+      let ch;
+      if (i === GAP) ch = '@';                           /* the head */
+      else if (f < 0.5) ch = i % 2 ? 'O' : 'o';          /* scaled body */
+      else if (f < 0.75) ch = i % 2 ? 'o' : '~';
+      else if (f < 0.94) ch = '~';
+      else ch = '.';                                     /* the tail, being eaten */
+      g[y][x] = ch;
+    }
+    return g.map(r => r.join('')).join('\n');
+  };
+
+  let phase = 0;
+  const still = matchMedia('(prefers-reduced-motion: reduce)');
+  const draw = () => { el.textContent = frame(phase); };
+  draw();
+  if (!still.matches) {
+    setInterval(() => { phase += Math.PI / 90; draw(); }, 110);   /* one turn ~20s */
+  }
+})();
+</script>
 
 </body>
 </html>
