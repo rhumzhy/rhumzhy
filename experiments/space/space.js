@@ -256,11 +256,13 @@
       for (const i of order) {
         const b = bands[i];
         if (b.loud < 0.05) continue;
-        const p = P(b.x * 0.92, b.ry, 1 - b.loud * 0.96);
-        ctx.globalAlpha = 0.18 + 0.82 * b.loud;
+        const t = 1 - b.loud * 0.96;
+        const p = P(b.x * 0.92, b.ry, t);
+        const near = 1 - t;              /* proximity carries the volume: */
+        ctx.globalAlpha = 0.06 + 0.94 * near * near;   /* haze far, solid near */
         ctx.fillStyle = regColor(b.ry);
         ctx.beginPath();
-        ctx.arc(p.x, p.y, (2 + 7.5 * b.loud) * p.s, 0, 7);
+        ctx.arc(p.x, p.y, (1.5 + 8.5 * near) * p.s, 0, 7);
         ctx.fill();
       }
       ctx.globalAlpha = 1;
@@ -348,9 +350,15 @@
   /* ---- player ---- */
   const fmt = s => isFinite(s)
     ? `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}` : '';
-  au.addEventListener('play', () => { cancelAnimationFrame(raf); run(); });
-  au.addEventListener('pause', () => { cancelAnimationFrame(raf); draw(); });
-  au.addEventListener('ended', () => { cancelAnimationFrame(raf); draw(); });
+  const ppEl = document.getElementById('pp');
+  ppEl.addEventListener('click', roomPress);
+  const pp = playing => {
+    ppEl.textContent = playing ? '‖' : '▸';
+    ppEl.setAttribute('aria-label', playing ? 'pause' : 'play');
+  };
+  au.addEventListener('play', () => { pp(true); cancelAnimationFrame(raf); run(); });
+  au.addEventListener('pause', () => { pp(false); cancelAnimationFrame(raf); draw(); });
+  au.addEventListener('ended', () => { pp(false); cancelAnimationFrame(raf); draw(); });
   au.addEventListener('timeupdate', () => {
     fillEl.style.width = au.duration ? `${(au.currentTime / au.duration) * 100}%` : '0%';
     timeEl.textContent = `${fmt(au.currentTime)} / ${fmt(au.duration)}`;
@@ -366,7 +374,6 @@
     ac.resume();
     au.src = url;
     pickEl.textContent = title;
-    lineEl.hidden = false;
     au.play();
   };
   pickEl.addEventListener('click', () => fileEl.click());
