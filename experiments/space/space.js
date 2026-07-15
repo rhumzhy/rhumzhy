@@ -172,9 +172,12 @@
     for (const [rx, ry] of [[-1, 0], [1, 0], [1, 1], [-1, 1]])
       seg(P(rx, ry, 0), P(rx, ry, 1));
     seg(P(-2, 0, 1), P(2, 0, 1));        /* width track, past both corners */
-    seg(P(1, VOLRY, 0), P(1, VOLRY, 1)); /* volume track */
     ctx.stroke();
     ctx.globalAlpha = 0.3;
+    ctx.strokeStyle = INK;               /* volume track wears its handle's ink */
+    ctx.beginPath();
+    seg(P(1, VOLRY, 0), P(1, VOLRY, 1));
+    ctx.stroke();
     for (let i = 0; i < 3; i++) {        /* eq tracks wear their register */
       ctx.strokeStyle = EQCOL[i];
       ctx.beginPath();
@@ -261,23 +264,16 @@
         const t = 1 - b.loud * 0.96;
         const p = P(b.x * 0.92, b.ry, t);
         const near = 1 - t;              /* proximity carries the volume: */
-        ctx.globalAlpha = 0.06 + 0.94 * near * near;   /* haze far, solid near */
-        ctx.fillStyle = regColor(b.ry);
+        if (i === peak) {                /* the one the ear locks onto */
+          ctx.globalAlpha = 0.95;
+          ctx.fillStyle = ACCENT;
+        } else {
+          ctx.globalAlpha = 0.06 + 0.94 * near * near;   /* haze far, solid near */
+          ctx.fillStyle = regColor(b.ry);
+        }
         ctx.beginPath();
         ctx.arc(p.x, p.y, (1.5 + 8.5 * near) * p.s, 0, 7);
         ctx.fill();
-      }
-      /* the one the ear locks onto — ringed, whatever register it lives in */
-      if (peak >= 0 && peakLoud >= 0.05) {
-        const b = bands[peak];
-        const t = 1 - b.loud * 0.96;
-        const p = P(b.x * 0.92, b.ry, t);
-        ctx.globalAlpha = 0.9;
-        ctx.strokeStyle = ACCENT;
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, (1.5 + 8.5 * (1 - t)) * p.s + 4, 0, 7);
-        ctx.stroke();
       }
       ctx.globalAlpha = 1;
     } else {
