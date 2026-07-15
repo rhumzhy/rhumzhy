@@ -2,7 +2,7 @@
 
 ## now
 
-(nothing in flight)
+- [ ] it12 · space — the sound room: 3-axis visualizer (x placement · y frequency · z loudness) + depth volume, wall eq, width brackets
 
 ## next
 

@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>space — rhumzhy</title>
+<link rel="stylesheet" href="/assets/base.css">
+<style>
+  body{
+    display:flex;
+    flex-direction:column;
+    padding:4vh clamp(1rem, 6vw, 5rem);
+  }
+  main{ width:100%; max-width:64rem; margin:0 auto; }
+  .back{ margin-bottom:clamp(1rem, 3vh, 2rem); display:inline-block; }
+  #room{
+    display:block; width:100%; height:min(62vh, 560px); min-height:320px;
+    touch-action:none; cursor:pointer;
+  }
+  #room:focus-visible{ outline:2px solid var(--accent); outline-offset:4px; }
+  .player{
+    display:flex; align-items:baseline; gap:1rem;
+    margin-top:1.2rem;
+  }
+  .pick{
+    font:inherit; background:none; border:0; padding:0; cursor:pointer;
+    color:var(--ink); text-align:left;
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:60%;
+  }
+  .pick:focus-visible{ outline:2px solid var(--accent); outline-offset:3px; }
+  .time{ margin-left:auto; font-size:0.72rem; }
+  .line{ margin-top:0.7rem; padding:6px 0; cursor:pointer; }
+  .track{ height:1px; background:color-mix(in srgb, var(--muted) 45%, transparent); }
+  .fill{ height:1px; width:0%; background:var(--ink); }
+  .hint{
+    margin-top:1.4rem; font-size:0.68rem; letter-spacing:0.08em;
+    color:var(--muted);
+  }
+  .lib{ list-style:none; margin-top:1.2rem; padding:0; }
+  .lib button{
+    font:inherit; background:none; border:0; padding:0.15rem 0; cursor:pointer;
+    color:var(--muted); display:block;
+  }
+  .lib button:hover{ color:var(--ink); }
+  .lib button:focus-visible{ outline:2px solid var(--accent); outline-offset:3px; }
+</style>
+</head>
+<body>
+
+  <main class="rise">
+    <a class="back" href="/experiments/" aria-label="back">←</a>
+    <canvas id="room" tabindex="0" aria-label="the sound room"></canvas>
+    <div class="player">
+      <button class="pick" id="pick">choose a track</button>
+      <span class="time mark" id="time"></span>
+    </div>
+    <div class="line" id="line" hidden><div class="track"><div class="fill" id="fill"></div></div></div>
+    <p class="hint mark" id="hint">low sits at the floor, high at the ceiling · loud comes toward you · press the room to play · eq on the left wall · volume on the floor · width at the brackets</p>
+    <ul class="lib" id="lib" hidden></ul>
+    <input type="file" id="file" accept="audio/*" hidden>
+    <audio id="au" hidden></audio>
+  </main>
+
+  <script src="/experiments/space/space.js"></script>
+</body>
+</html>
