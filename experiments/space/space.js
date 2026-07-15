@@ -1,8 +1,12 @@
 /* space — sound in three axes. x: placement · y: frequency · z: loudness.
-   the room shows the signal after the plugins, so what you edit is what you see.
-   eq lives on the left wall (low at the floor, high at the ceiling — boost pulls
-   a band toward you) · volume is a handle on the floor (closer is louder) ·
-   width is a pair of brackets on the near edge. web audio + one canvas, no deps. */
+   you stand inside a cube: left wall, right wall, back wall, floor, gridded
+   in octaves. the room shows the signal after the plugins, so what you edit
+   is what you see. eq rides the left wall (low at the floor, high at the
+   ceiling — boost pulls a band toward you) · volume is one slider on the
+   right wall (closer is louder) · width lives on the back edge: corners are
+   100%, the middle is mono, past the walls is 200%. lows wear ink, mids the
+   accent, highs the muted gray — the handles wear the register they own.
+   web audio + one canvas, no deps. */
 (() => {
   const cv = document.getElementById('room');
   const ctx = cv.getContext('2d');
@@ -52,11 +56,16 @@
   const eqRy = EQDEF.map(d => fy(d.f));
   const eqGain = [0, 0, 0];              /* db, ±12 */
   let vol = 1;                           /* 0..1, audio taper */
-  let width = 1;                         /* 0 mono · 1 as recorded · 2 wide */
+  let width = 1;                         /* 0 mono · 1 at the corners · 2 past the walls */
 
   const eqT = i => 0.5 - (eqGain[i] / 12) * 0.45;    /* boost → near */
+  const VOLRY = 0.5;                                 /* the right-wall slider height */
   const volT = () => 0.95 - vol * 0.9;               /* loud → near */
-  const wRx = () => 0.08 + 0.43 * width;             /* bracket reach */
+
+  /* registers: where the crossovers sit, and the color each side of them wears */
+  const XLOW = fy(250), XHIGH = fy(4000);
+  const regColor = ry => ry < XLOW ? INK : ry < XHIGH ? ACCENT : MUTED;
+  const EQCOL = [INK, ACCENT, MUTED];
 
   /* ---- audio graph — built on the first gesture ---- */
   let ac = null, EQ = null, sideW = null, master = null, anL = null, anR = null;
@@ -109,7 +118,7 @@
     bufR = new Uint8Array(anR.frequencyBinCount);
 
     /* log-spaced bands over the fft bins */
-    const NB = 88, binHz = ac.sampleRate / anL.fftSize;
+    const NB = 40, binHz = ac.sampleRate / anL.fftSize;
     bands = [];
     for (let i = 0; i < NB; i++) {
       const f0 = FMIN * Math.pow(FMAX / FMIN, i / NB);
@@ -125,36 +134,61 @@
 
   /* ---- drawing ---- */
   let drag = null;
+
+  /* the cube: octave lines run level around the walls — equal spacing is
+     equal musical distance. verticals and floor lines quarter the depth. */
+  const OCTAVES = [60, 120, 250, 500, 1000, 2000, 4000, 8000, 16000].map(fy);
+  const QUARTERS = [0.25, 0.5, 0.75];
+  const seg = (a, b) => { ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); };
   const wire = () => {
     ctx.strokeStyle = MUTED;
-    ctx.globalAlpha = 0.16;
     ctx.lineWidth = 1;
+    /* grid */
+    ctx.globalAlpha = 0.08;
+    ctx.beginPath();
+    for (const ry of OCTAVES) {
+      seg(P(-1, ry, 0), P(-1, ry, 1));   /* left wall  */
+      seg(P(-1, ry, 1), P(1, ry, 1));    /* back wall  */
+      seg(P(1, ry, 1), P(1, ry, 0));     /* right wall */
+    }
+    for (const t of QUARTERS) {
+      seg(P(-1, 0, t), P(-1, 1, t));     /* wall verticals */
+      seg(P(1, 0, t), P(1, 1, t));
+      seg(P(-1, 0, t), P(1, 0, t));      /* floor rungs */
+    }
+    for (const rx of [-0.5, 0, 0.5]) {
+      seg(P(rx, 0, 0), P(rx, 0, 1));     /* floor depth lines */
+      seg(P(rx, 0, 1), P(rx, 1, 1));     /* back wall verticals */
+    }
+    ctx.stroke();
+    /* frame + the tracks the handles ride */
+    ctx.globalAlpha = 0.2;
     ctx.beginPath();
     for (const t of [0, 1]) {
       const a = P(-1, 0, t), b = P(1, 0, t), c = P(1, 1, t), d = P(-1, 1, t);
       ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.lineTo(c.x, c.y);
       ctx.lineTo(d.x, d.y); ctx.lineTo(a.x, a.y);
     }
-    for (const [rx, ry] of [[-1, 0], [1, 0], [1, 1], [-1, 1]]) {
-      const a = P(rx, ry, 0), b = P(rx, ry, 1);
-      ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y);
-    }
-    /* the tracks the handles ride: eq depth lines on the wall, volume on the floor */
-    for (const ry of eqRy) {
-      const a = P(-1, ry, 0), b = P(-1, ry, 1);
-      ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y);
-    }
-    const va = P(0, 0, 0), vb = P(0, 0, 1);
-    ctx.moveTo(va.x, va.y); ctx.lineTo(vb.x, vb.y);
+    for (const [rx, ry] of [[-1, 0], [1, 0], [1, 1], [-1, 1]])
+      seg(P(rx, ry, 0), P(rx, ry, 1));
+    seg(P(-2, 0, 1), P(2, 0, 1));        /* width track, past both corners */
+    seg(P(1, VOLRY, 0), P(1, VOLRY, 1)); /* volume track */
     ctx.stroke();
+    ctx.globalAlpha = 0.3;
+    for (let i = 0; i < 3; i++) {        /* eq tracks wear their register */
+      ctx.strokeStyle = EQCOL[i];
+      ctx.beginPath();
+      seg(P(-1, eqRy[i], 0), P(-1, eqRy[i], 1));
+      ctx.stroke();
+    }
     ctx.globalAlpha = 1;
   };
 
   const handles = () => {
     const hs = eqRy.map((ry, i) => ({ kind: 'eq', i, ...P(-1, ry, eqT(i)) }));
-    hs.push({ kind: 'vol', ...P(0, 0, volT()) });
-    hs.push({ kind: 'w', side: 1, ...P(wRx(), 0, 0.08) });
-    hs.push({ kind: 'w', side: -1, ...P(-wRx(), 0, 0.08) });
+    hs.push({ kind: 'vol', ...P(1, VOLRY, volT()) });
+    hs.push({ kind: 'w', side: 1, ...P(width, 0, 1) });
+    hs.push({ kind: 'w', side: -1, ...P(-width, 0, 1) });
     return hs;
   };
 
@@ -163,20 +197,22 @@
     ctx.textAlign = 'left';
     for (const h of handles()) {
       const active = drag && drag.kind === h.kind && drag.i === h.i && drag.side === h.side;
-      ctx.fillStyle = INK; ctx.strokeStyle = INK;
       if (h.kind === 'eq') {
-        ctx.globalAlpha = active ? 1 : 0.75;
+        ctx.fillStyle = EQCOL[h.i];
+        ctx.globalAlpha = active ? 1 : 0.85;
         ctx.beginPath();
-        ctx.arc(h.x, h.y, 5.5 * h.s + 1, 0, 7);
+        ctx.arc(h.x, h.y, 5.5 * h.s + 1.5, 0, 7);
         ctx.fill();
       } else if (h.kind === 'vol') {
-        const r = 5 * h.s + 1;
-        ctx.globalAlpha = active ? 1 : 0.75;
+        const r = 4.5 * h.s + 1.5;
+        ctx.fillStyle = INK;
+        ctx.globalAlpha = active ? 1 : 0.85;
         ctx.fillRect(h.x - r, h.y - r, r * 2, r * 2);
       } else {
-        ctx.globalAlpha = active ? 1 : 0.55;
+        ctx.strokeStyle = INK;
+        ctx.globalAlpha = active ? 1 : 0.6;
         ctx.lineWidth = 1.5;
-        const e = 6 * h.s, o = 5 * h.s * h.side;
+        const e = 7, o = 5 * h.side;
         ctx.beginPath();
         ctx.moveTo(h.x + o, h.y - e); ctx.lineTo(h.x, h.y - e * 0.2);
         ctx.lineTo(h.x, h.y + e * 0.2); ctx.lineTo(h.x + o, h.y + e);
@@ -190,10 +226,10 @@
         const gdb = eqGain[drag.i];
         text = `${EQDEF[drag.i].name} ${gdb >= 0 ? '+' : ''}${gdb.toFixed(1)}`;
       } else if (drag.kind === 'vol') text = `vol ${Math.round(vol * 100)}`;
-      else text = `width ${width.toFixed(2)}`;
+      else text = `width ${Math.round(width * 100)}%`;
       const h = handles().find(h => h.kind === drag.kind && h.i === drag.i && h.side === drag.side);
       ctx.fillStyle = INK;
-      ctx.fillText(text, Math.min(h.x + 14, W - 70), h.y - 12);
+      ctx.fillText(text, Math.min(h.x + 14, W - 84), h.y - 12);
     }
   };
 
@@ -204,7 +240,6 @@
     if (bands && anL) {
       anL.getByteFrequencyData(bufL);
       anR.getByteFrequencyData(bufR);
-      let peak = -1, peakLoud = 0;
       for (let i = 0; i < bands.length; i++) {
         const b = bands[i];
         let vL = 0, vR = 0;
@@ -216,17 +251,16 @@
         b.loud = (vL + vR) / 2;
         const xt = Math.max(-1, Math.min(1, (vR - vL) * 3 / (vL + vR + 0.001)));
         b.x += (xt - b.x) * 0.25;
-        if (b.loud > peakLoud) { peakLoud = b.loud; peak = i; }
       }
       order.sort((a, b) => bands[a].loud - bands[b].loud);   /* far first, loud on top */
       for (const i of order) {
         const b = bands[i];
         if (b.loud < 0.05) continue;
         const p = P(b.x * 0.92, b.ry, 1 - b.loud * 0.96);
-        ctx.globalAlpha = 0.15 + 0.85 * b.loud;
-        ctx.fillStyle = i === peak ? ACCENT : INK;
+        ctx.globalAlpha = 0.18 + 0.82 * b.loud;
+        ctx.fillStyle = regColor(b.ry);
         ctx.beginPath();
-        ctx.arc(p.x, p.y, (1.4 + 6.5 * b.loud) * p.s, 0, 7);
+        ctx.arc(p.x, p.y, (2 + 7.5 * b.loud) * p.s, 0, 7);
         ctx.fill();
       }
       ctx.globalAlpha = 1;
@@ -282,12 +316,11 @@
       eqGain[drag.i] = Math.max(-12, Math.min(12, (0.5 - t) / 0.45 * 12));
       if (EQ) setParam(EQ[drag.i].gain, eqGain[drag.i]);
     } else if (drag.kind === 'vol') {
-      const t = projT(P(0, 0, 0), P(0, 0, 1), x, y);
+      const t = projT(P(1, VOLRY, 0), P(1, VOLRY, 1), x, y);
       vol = Math.max(0, Math.min(1, (0.95 - t) / 0.9));
       if (master) setParam(master.gain, vol * vol);
     } else {
-      const rx = Math.abs((x - W / 2) / (nr.hw + (fr.hw - nr.hw) * 0.08));
-      width = Math.max(0, Math.min(2, (rx - 0.08) / 0.43));
+      width = Math.max(0, Math.min(2, Math.abs((x - W / 2) / fr.hw)));
       if (sideW) setParam(sideW.gain, width);
     }
     if (au.paused || !bands) draw();
