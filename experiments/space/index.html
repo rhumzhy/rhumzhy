@@ -19,18 +19,22 @@
   }
   #room:focus-visible{ outline:2px solid var(--accent); outline-offset:4px; }
   .player{
-    display:flex; align-items:baseline; gap:1rem;
-    margin-top:0.5rem;
+    position:relative; display:flex; align-items:center;
+    margin-top:0.8rem; min-height:2.2rem;
   }
   .pp{
-    font-family:var(--mono); font-size:0.8rem; line-height:1;
-    background:none; border:0; padding:0; cursor:pointer; color:var(--ink);
+    position:absolute; left:50%; transform:translateX(-50%);
+    font-family:var(--mono); font-size:0.85rem; line-height:1;
+    background:#FFFFFF; color:var(--muted);
+    border:0; border-radius:3px; padding:0.5rem 1.2rem; cursor:pointer;
+    transition:color 0.25s var(--ease);
   }
+  .pp:hover{ color:var(--ink); }
   .pp:focus-visible{ outline:2px solid var(--accent); outline-offset:3px; }
   .pick{
-    font:inherit; background:none; border:0; padding:0; cursor:pointer;
+    font:inherit; font-size:0.85rem; background:none; border:0; padding:0; cursor:pointer;
     color:var(--muted); text-align:left;
-    overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:60%;
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:32%;
   }
   .pick:hover{ color:var(--ink); }
   .pick:focus-visible{ outline:2px solid var(--accent); outline-offset:3px; }
