@@ -27,16 +27,24 @@
     gap:clamp(0.9rem, 2.2vw, 1.4rem);
   }
 
-  /* the ouroboros — the site's own dragon, drawn in type */
-  .ouro{
-    font-family:var(--mono);
-    font-size:clamp(6px, min(0.72vw, 1.3vh), 11px);
-    line-height:1;
-    color:var(--muted);
-    user-select:none;
+  /* the art — temporary preview: tap it to cycle the candidates */
+  .art{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:0.7rem;
     opacity:0;
     animation:rise .7s var(--ease) .45s forwards;
   }
+  .ouro{
+    font-family:var(--mono);
+    line-height:1;
+    color:var(--muted);
+    user-select:none;
+    cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+  }
+  #artmark{ letter-spacing:0.2em; }
 
   @media (max-width:760px){
     .hub{
@@ -44,10 +52,10 @@
       align-items:flex-start;
       gap:clamp(2rem, 6vh, 3rem);
     }
-    .ouro{ font-size:1.35vw; line-height:1; }   /* scaled down, aligned with the words */
+    .art{ align-items:flex-start; }
   }
   @media (prefers-reduced-motion: reduce){
-    .ouro{ animation:none; opacity:1; }
+    .art{ animation:none; opacity:1; }
   }
 </style>
 </head>
@@ -70,100 +78,80 @@
       <a class="link" href="/curation/">curation</a>
     </nav>
 
-    <pre class="ouro" id="ouro" aria-hidden="true"></pre>
+    <div class="art">
+      <pre class="ouro" id="ouro" aria-label="ascii art, press for the next piece" role="button" tabindex="0"></pre>
+      <span class="mark" id="artmark"></span>
+    </div>
   </div>
 
 <script>
 (() => {
   const el = document.getElementById('ouro');
-  if (!el) return;
+  const mark = document.getElementById('artmark');
+  const still = matchMedia('(prefers-reduced-motion: reduce)');
+  const NL = String.fromCharCode(10);
 
-  /* the ouroboros — braille dot art; a shimmer wave sweeps through it,
-     light moving over scales. the art itself never changes. */
-  const ART = `⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣤⠄⠀⠀⠀⢠⡾⠃⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣴⣿⠋⠀⠀⠀⢠⡟⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣀⢶⣤⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡟⢹⡄⠀⠀⠀⢸⢣⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢠⣾⡿⠀⢻⡻⡄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣷⡜⢿⣇⠀⠀⡏⠀⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢠⡿⢸⡇⠀⠈⣷⡹⣆⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢿⣷⡀⠉⠓⢶⡇⢠⣧⠀⠀⠀⠀⠀⠀⠀⠀⣀⣠⣤⣴⣶⣶⣤⣄⣀⠀⠀⠀⠀⢸⡇⢸⣇⠀⠀⠸⡇⠙⣆⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠻⣿⣷⣄⢸⡇⠈⣿⡟⠳⢦⣄⡀⠀⠀⠀⠀⠉⠻⢯⡉⠙⠶⣄⠉⠳⣤⠀⠀⠸⣇⠀⢻⡀⠀⠀⢱⠀⠸⣦⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠻⣿⣿⡇⠀⢯⢷⠀⠀⠀⠉⠛⠶⣦⣄⡀⠀⠀⢳⡀⠀⠀⠳⡄⠀⠳⡄⠀⠻⣆⠀⠻⣆⠀⢸⡆⠀⠘⡆⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠹⡇⠀⢸⡌⣧⡀⠒⢦⣀⠀⠀⠀⠙⠻⢦⣀⢷⡀⠀⠀⢹⡄⠀⠹⣦⡠⢿⣿⡷⣮⣻⣾⡇⠀⠀⢻⡆⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡇⠀⠘⣷⠙⣿⣶⣄⡉⠳⣄⡀⠀⠀⠀⠈⠻⢷⣄⠀⠀⣿⠀⠀⠙⣶⣏⣡⣶⠿⠿⠏⢻⣄⠀⠀⣧⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣀⡤⠶⢿⠀⠀⠸⣆⠘⢷⡙⠿⣦⡈⠳⣦⣀⠀⠀⠀⠀⠙⢧⣀⣿⠆⠀⢸⠟⢻⣿⠻⣆⠀⠀⠀⠙⢧⠀⢸⡄⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠐⠛⠛⠛⢳⣾⡆⠀⠀⠻⡄⠈⠳⣄⠙⢿⣦⡈⠻⣧⡄⠀⠀⠀⠀⠙⢿⡆⠀⠃⠀⠉⣿⣆⢹⡄⠀⠀⠀⠈⣧⣸⡇⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣀⣤⣤⣴⣞⣉⣷⠀⠀⠀⠹⣄⠀⠙⢧⡀⠙⢷⣄⠘⢿⣤⡀⠀⠀⠀⠀⠻⣦⣄⠀⢸⠋⠙⣦⣿⡀⠀⠀⠀⠹⣿⡇⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣠⣴⣿⣿⣿⡛⠛⠛⠻⢿⣧⡀⠀⠀⠙⢧⡀⠈⠻⣦⢤⣹⣦⠀⢻⣿⠀⠀⠀⠀⣀⣹⣏⣴⣇⠀⠀⠈⣿⡇⠀⠀⠀⠀⢿⡇⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠀⠀⠀⠈⢹⣷⠀⠀⠈⢷⠳⡀⠀⠀⠈⠻⣄⠀⠉⢷⣭⡙⣧⠀⣹⣷⣶⢖⣫⣭⣽⣿⣅⠀⠀⣰⠟⠙⡿⣦⣤⣤⣄⣸⣷⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣠⠞⠁⠀⠀⠀⠘⣧⠙⢦⣀⡀⠀⠙⢦⡀⠀⠙⢿⣿⣿⣏⣽⣿⣿⠟⠛⢋⣻⣿⣷⣶⡋⠀⠀⣠⠾⢿⣗⠿⣿⣿⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣠⣴⣶⣾⡿⠿⠶⠶⢶⣶⣶⣶⣿⣧⡀⠻⣿⣶⡀⠈⢳⣄⠠⣄⠀⠙⠿⣿⡟⠁⠀⡴⠋⠉⠉⠙⣧⡉⠀⠊⠀⠀⠀⢙⣷⣌⣿⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⢀⣴⣿⡿⠿⢦⡀⠀⠀⠀⠀⠀⠀⠈⠉⠙⢿⣿⣦⡀⠻⣿⣶⣤⠹⣦⠈⢷⡀⢠⡟⢿⣄⠀⠀⠀⡴⠒⠂⠉⠻⢦⡀⠀⢀⠞⠉⠙⢿⣿⡄⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠞⠉⠀⠀⠀⢠⡟⠀⣀⣀⣀⣀⣀⣀⣠⡶⠛⠛⣿⣿⣷⡀⠉⠻⣿⣌⣧⠀⣿⡟⠀⠀⠙⢷⣄⣸⠁⠀⠀⠀⠠⠤⢽⣏⠛⠀⠀⣀⣼⣿⣇⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣤⣾⣿⣿⠿⠿⠛⠻⢿⣿⡿⠋⠀⠀⠈⠉⢿⣿⣿⣄⠀⠹⣿⣿⣿⣿⠁⠀⠀⠀⠀⠙⣿⣦⡀⣸⠀⠀⠀⠀⡬⢷⣤⣴⠁⠀⠻⣿⣷⣄⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⢠⣾⡿⠟⠉⠀⠀⠀⠀⠀⠀⣠⠏⠀⠀⢀⣀⣠⠾⣿⣿⣿⣿⣄⠀⠉⠉⢻⣿⠀⠀⠀⠀⠀⠀⠹⣿⣿⣿⣷⣄⣰⡄⠀⠀⠀⠹⠀⠀⠀⠛⢿⣿⡆⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⢀⣴⣿⠥⢤⡀⠀⠀⠀⠀⣀⣠⡾⠃⠀⠀⠈⠉⠁⠀⠀⠀⠈⠻⣿⣿⣧⣀⣀⣘⣿⡄⠀⠀⠀⠀⠀⠀⠹⣿⣿⣿⣿⣿⣇⠀⠀⠀⠀⠰⡄⠀⡀⠀⢸⣷⠀⠀⠀⠀
-⠀⠀⠀⠀⢀⣼⠟⠁⠀⢀⣇⣀⣴⣶⣿⣿⡟⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣸⡿⠿⢿⣿⡿⠉⠻⣦⡀⠀⠀⠀⠀⠀⠻⣇⠉⠛⢿⣿⣆⠀⠀⠀⠀⣳⣠⡇⣰⣼⣿⠀⠀⠀⠀
-⠀⠀⠀⠀⠈⠁⠀⣠⣴⠿⠛⠉⠁⠀⣰⠟⠀⠀⠀⠀⠀⠀⠀⠀⣀⣠⣤⣤⣶⣶⣾⣿⡟⢿⠃⠀⠀⠙⢿⣦⡀⠀⠀⠀⠀⠙⢷⣤⣤⣿⣿⢿⡶⠤⠶⠛⣿⠛⠛⡿⠃⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⣠⡿⠋⠁⠀⠀⠀⠀⣰⠇⠀⠀⠀⠀⠀⢀⡤⠖⠛⣫⣴⣾⣿⠛⠋⠀⠸⣧⣸⠀⠀⠀⠀⠀⠙⢷⡀⠀⠀⠀⠀⠀⠉⠻⣿⣿⠀⢷⡀⠀⠀⢻⡆⠘⡇⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⣼⡟⠀⠀⠀⠀⠀⣠⣾⠋⠀⠀⠀⠀⣠⠾⠋⢀⣤⣾⣿⠛⠉⠻⣆⠀⠀⠀⠙⢿⡄⠀⠀⠀⠀⠀⠈⠃⠀⠀⠀⠀⠀⠀⠀⠘⣿⣧⠘⠇⠀⠀⠘⡇⠀⡇⠀⠀⠀⠀⠀
-⠀⠀⠀⣴⡏⣠⡀⠀⣠⣴⣾⣿⠇⠀⠀⠀⠀⠞⠋⠀⣴⣿⣿⣿⠁⠀⠀⠀⠙⢧⡀⠀⠀⠈⢿⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢹⣿⣧⡀⠀⠀⠐⢷⡀⣷⠀⠀⠀⠀⠀
-⠀⠀⢠⣿⠟⠉⣡⣾⡿⠋⠁⡟⠀⠀⠀⠀⠀⠀⢀⣾⣿⠟⠁⢿⡆⠀⠀⠀⠀⢀⡟⠻⣍⠉⠉⠻⣄⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠻⣬⡇⠀⠀⠀⠈⠳⢻⡆⠀⠀⠀⠀
-⠀⠀⠸⠁⢀⣾⡟⠋⠀⠀⣼⠀⠀⠀⠀⠀⠀⣠⣿⣿⠁⠀⠀⠀⠙⣦⡀⠀⠀⢸⡀⠀⢈⡷⢦⣤⣬⡿⢶⣄⡀⠀⠀⢰⣤⡀⠀⠀⠀⠀⠀⠀⠈⠁⠀⠀⠀⠀⠀⠈⢷⠀⠀⠀⠀
-⠀⠀⠀⢀⣾⠏⠀⠀⠀⣰⠇⠀⠀⠀⠀⠀⣴⣿⣿⣹⣧⠀⠀⠀⠀⠀⠉⠉⠉⠉⠻⣏⠁⠀⣠⡟⠁⠀⠀⠈⠙⠶⣄⠘⠿⢿⣄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠘⣧⠀⠀⠀
-⠀⠀⠀⣿⠃⠀⠀⢀⣼⡟⠀⠀⠀⠀⠀⢰⣿⡿⠁⠀⠘⢧⡀⠀⠀⠀⠘⢷⣀⣀⣤⠾⢿⣿⠟⠀⠀⠀⠀⠀⠀⠀⠈⠹⣦⡀⠉⠳⣦⡀⠀⠀⠀⠀⠀⢴⡏⠉⠙⠶⠄⠘⡗⠶⡄
-⠀⠀⢸⣇⡴⢶⣠⣾⣿⡇⠀⠀⠀⠀⢰⣿⣿⠃⠀⠀⠀⠀⠉⠛⢶⠶⠶⠞⢷⠀⠀⣰⣿⡏⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠳⣄⠀⠀⠙⢳⣄⠀⠀⠀⠈⣿⣄⠀⠀⠀⠀⠀⠀⣿
-⠀⠀⣼⠟⢀⣾⡿⠋⣸⡇⠀⠀⠀⠀⣼⣿⠹⣇⠀⠀⠀⠀⠀⠀⠈⣆⠀⣀⣨⠟⠋⣽⣿⠇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠙⢦⣀⠠⡀⠙⣧⡀⠀⢰⣿⣿⣆⠀⠀⠀⠀⠀⢻
-⠀⢀⡏⢀⣾⡟⠀⠀⣿⠃⠀⠀⠀⢸⣿⡿⠶⠛⠷⣤⣀⣀⣀⣀⣠⢿⡟⠉⠁⠀⣼⡿⣹⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠙⠷⣽⡄⠸⣇⠀⠘⠞⢿⣿⠤⠶⠂⡔⢠⠟
-⠀⠀⠀⣾⡟⠀⠀⢰⡿⠀⠀⠀⠀⣿⡟⠀⠀⠀⠀⠀⠉⢹⡏⠁⠀⠈⢷⡤⠤⢴⣿⡇⣿⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠘⣿⠀⠻⣄⡀⠀⠶⠏⠀⠀⠀⡇⣸⠀
-⠀⠀⢸⣿⠁⠀⠀⢸⡇⠀⠀⠀⢰⣿⠻⣄⠀⠀⠀⠀⠀⠈⢷⣀⣤⠔⠋⠀⠀⢰⣿⠃⣿⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠹⣷⣄⠈⠛⠲⣤⡀⠀⣀⡼⣿⠏⠀
-⠀⠀⣼⡇⠀⠀⠀⢸⡇⠀⠀⠀⣼⣿⠴⠚⠓⢤⣄⣀⣀⣤⠴⣯⡀⠀⠀⠀⠀⣼⣿⠀⢸⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠙⠓⠦⣤⠬⢿⣦⣅⡿⠋⠀⠀
-⠀⠀⣿⣴⠞⠛⢳⣼⡇⠀⠀⢠⣿⠏⠀⠀⠀⠀⠈⢹⡍⠀⠀⠈⢳⣤⣤⣴⠞⢻⡏⠀⠸⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠛⠉⠀⠀⠀⠀
-⠀⢐⡿⠁⠀⠀⣾⣿⡇⠀⠀⣸⣿⡀⠀⠀⠀⠀⠀⠀⠙⣆⣀⡤⠞⠁⠀⠀⠙⢿⡇⠀⠀⣧⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠈⡇⠀⠀⣼⣿⢻⣇⠀⠀⣿⣿⠓⢤⣀⠀⠀⠀⢀⣤⠿⣯⠀⠀⠀⠀⠀⢀⣾⡇⠀⠀⢹⡆⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠁⠀⢸⣿⠃⢘⣿⠀⠀⣿⣿⠶⠋⠉⠛⠛⣿⠉⠁⠀⠙⢷⣤⣀⣠⣴⠊⣻⡇⠀⠀⠸⣷⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⣿⡟⠀⠈⣿⠀⢸⣿⡟⠀⠀⠀⠀⠀⠘⠦⣀⢀⣠⠟⠁⠀⠀⠈⠻⣿⡇⠀⠀⠀⢹⡆⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⢰⣿⢡⠞⢧⣿⠀⢸⣿⣧⡀⠀⠀⠀⠀⠀⠀⣰⣏⠀⠀⠀⠀⠀⠀⠀⢸⣷⠀⠀⠀⠀⣿⡄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⣿⠇⠀⣸⣿⠀⣾⣿⣍⣳⠦⢤⣀⡤⠴⠞⠁⠸⢧⡀⠀⠀⠀⠀⣠⣾⣿⡀⠀⠀⠀⠘⣷⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⡿⠀⢠⣿⣿⠀⣿⡿⠉⠁⠀⠀⠹⣇⠀⠀⠀⠀⠀⣿⠷⠶⠶⠟⠻⣅⣿⡇⠀⠀⠀⠀⠈⣷⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⣿⠃⣿⠀⣿⣇⠀⠀⠀⠀⠀⠈⠳⢤⣀⡴⠞⠁⠀⠀⠀⠀⠀⠀⣿⣇⠀⠀⠀⠀⠀⠘⢷⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⡿⢰⡟⢠⣿⣿⡄⠀⠀⠀⠀⠀⣀⣴⢿⡅⠀⠀⠀⠀⠀⠀⠀⠀⣿⣿⡀⠀⠀⠀⠀⠀⠈⠻⣦⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⢸⡇⣸⡇⢸⣿⣿⡿⠓⠦⢤⣶⡛⠋⠁⠀⠙⠲⣤⣄⣀⣀⣀⣀⣴⣿⣿⣧⠀⠀⠀⠀⠀⠀⠀⠙⣷⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⣿⢻⡇⢸⣿⠁⠀⠀⠀⠀⠈⢷⠀⠀⠀⠀⢀⣼⠟⠉⠉⠋⠉⠀⠉⠹⣿⡇⠀⠀⠀⠀⠀⠀⠀⠈⢷⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⢁⣿⠇⢸⣿⠀⠀⠀⠀⠀⠀⠈⠳⢤⣤⡴⠋⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⣿⣄⠀⠀⠀⠀⠀⠀⠀⠈⠻⣦⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⣸⡏⠀⣸⣿⡀⠀⠀⠀⠀⠀⠀⣠⣼⣿⣧⡀⠀⠀⠀⠀⠀⠀⠀⠀⢠⡟⢹⣿⡄⠀⠀⠀⠀⠀⠀⠀⠀⠈⠙⠻⣶⣤⣄⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⣿⠃⠀⣿⣿⣷⣶⣶⣶⣶⣶⡿⠋⠀⠉⠈⠙⢦⣄⣀⣀⣀⣠⣤⠶⠚⠓⠛⠛⣿⣆⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠉⠛⠷⣶⣤⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⢰⡟⠀⢰⣿⣿⠿⢛⡏⠉⢻⡇⠀⠀⠀⠀⠀⠀⢀⡽⠋⠉⠉⠉⠀⠀⠀⠀⠀⠀⠘⣿⣧⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠙⠷⣤⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⢀⣿⠃⠀⣸⣿⠉⠓⠊⠀⠀⠀⢳⡄⠀⠀⠀⠀⣠⠞⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣼⣿⣷⣄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠳⡄⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⢀⣼⡿⠀⢠⣿⣿⠀⠀⠀⠀⠀⠀⠀⠙⢦⣀⣠⠞⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣸⠟⠈⠻⣿⣷⣄⡀⠀⠀⠀⠀⠀⣀⣠⣤⠶⠶⠶⠛⠛⠛⠲⠿⠀⠀⠀⠀⠀⠀
-⠀⢀⣴⣿⡇⠀⠀⣸⣿⣿⣄⠀⠀⠀⠀⠀⠀⠀⣠⡿⢷⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣰⠿⠦⠤⠴⠾⠋⠁⠉⠙⠛⠛⠉⠉⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⣠⠟⠁⣿⣀⣀⣾⡿⠿⠛⠿⢷⣶⣤⣠⣤⠴⠞⠋⠀⠀⠙⢦⣄⣀⠀⠀⠀⠀⠀⣀⣠⠶⠋⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠈⠁⠀⠀⠀⠀⠀⠀⠀⠉⢻⡀⠀⠀⠀⠀⠀⠀⠀⠀⢉⡟⠛⠛⠛⠛⠉⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠻⣆⠀⠀⠀⠀⠀⢀⡴⠏⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠘⠻⢦⣥⠤⠞⠋⢀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀`.split(/\r?\n/);
+  let list = [], idx = 0, art = '', t = 0;
 
-  let t = 0;
+  /* size the piece to its box: desktop shares the row with the nav,
+     mobile gets the full column under it */
+  const fit = () => {
+    if (!art) return;
+    const lines = art.split(NL);
+    const rows = lines.length;
+    const cols = Math.max(...lines.map(l => l.length));
+    const mobile = matchMedia('(max-width:760px)').matches;
+    const nav = document.querySelector('nav');
+    const hub = document.querySelector('.hub');
+    const availW = mobile
+      ? hub.clientWidth
+      : hub.clientWidth - nav.offsetWidth - 60;
+    const availH = mobile ? innerHeight * 0.52 : innerHeight * 0.76;
+    const fs = Math.min(availW / (cols * 0.605), availH / rows);
+    el.style.fontSize = Math.max(2.5, Math.min(fs, 14)) + 'px';
+  };
+
+  /* braille pieces get the shimmer — a band of light passing over the
+     dots. everything else stays still. plain text passes through. */
   const render = () => {
-    let out = '';
-    for (let y = 0; y < ART.length; y++) {
-      const row = ART[y];
-      let line = '';
-      for (let x = 0; x < row.length; x++) {
-        const c = row.charCodeAt(x);
-        if (c > 0x2800 && c <= 0x28FF && Math.sin(0.16 * (x + 2 * y) - t) > 0.95) {
-          const bit = 1 << ((x * 7 + y * 3) % 8);
-          line += String.fromCharCode(0x2800 + ((c - 0x2800) ^ bit));
-        } else {
-          line += row[x];
-        }
+    let out = '', x = 0, y = 0;
+    for (let i = 0; i < art.length; i++) {
+      const c = art.charCodeAt(i);
+      if (c === 10) { out += art[i]; x = 0; y++; continue; }
+      if (c > 0x2800 && c <= 0x28FF && Math.sin(0.16 * (x + 2 * y) - t) > 0.95) {
+        const bit = 1 << ((x * 7 + y * 3) % 8);
+        out += String.fromCharCode(0x2800 + ((c - 0x2800) ^ bit));
+      } else {
+        out += art[i];
       }
-      out += line + '\n';
+      x++;
     }
     el.textContent = out;
   };
 
-  render();
-  if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    setInterval(() => { t += 0.18; render(); }, 120);
-  }
+  const show = i => {
+    idx = ((i % list.length) + list.length) % list.length;
+    art = list[idx].a;
+    localStorage.setItem('rz.art.i', idx);
+    mark.textContent = `${list[idx].n} · ${idx + 1}/${list.length}`;
+    fit();
+    render();
+  };
+
+  fetch('/assets/art-preview.json')
+    .then(r => r.json())
+    .then(data => {
+      list = data;
+      show(parseInt(localStorage.getItem('rz.art.i') || '0', 10) || 0);
+      el.addEventListener('click', () => show(idx + 1));
+      el.addEventListener('keydown', e => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); show(idx + 1); }
+      });
+      addEventListener('resize', fit);
+      if (!still.matches) {
+        setInterval(() => { t += 0.18; render(); }, 120);
+      }
+    });
 })();
 </script>
 

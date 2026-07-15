@@ -2,7 +2,8 @@
 
 ## now
 
-(nothing in flight)
+- hub art audition (TEMPORARY): /assets/art-preview.json + tap-to-cycle switcher on the hub.
+  once a piece is chosen: embed it alone, delete the json and the switcher, log the choice.
 
 ## next
 
