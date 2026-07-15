@@ -240,6 +240,7 @@
     if (bands && anL) {
       anL.getByteFrequencyData(bufL);
       anR.getByteFrequencyData(bufR);
+      let peak = -1, peakLoud = 0;
       for (let i = 0; i < bands.length; i++) {
         const b = bands[i];
         let vL = 0, vR = 0;
@@ -251,6 +252,7 @@
         b.loud = (vL + vR) / 2;
         const xt = Math.max(-1, Math.min(1, (vR - vL) * 3 / (vL + vR + 0.001)));
         b.x += (xt - b.x) * 0.25;
+        if (b.loud > peakLoud) { peakLoud = b.loud; peak = i; }
       }
       order.sort((a, b) => bands[a].loud - bands[b].loud);   /* far first, loud on top */
       for (const i of order) {
@@ -264,6 +266,18 @@
         ctx.beginPath();
         ctx.arc(p.x, p.y, (1.5 + 8.5 * near) * p.s, 0, 7);
         ctx.fill();
+      }
+      /* the one the ear locks onto — ringed, whatever register it lives in */
+      if (peak >= 0 && peakLoud >= 0.05) {
+        const b = bands[peak];
+        const t = 1 - b.loud * 0.96;
+        const p = P(b.x * 0.92, b.ry, t);
+        ctx.globalAlpha = 0.9;
+        ctx.strokeStyle = ACCENT;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, (1.5 + 8.5 * (1 - t)) * p.s + 4, 0, 7);
+        ctx.stroke();
       }
       ctx.globalAlpha = 1;
     } else {
