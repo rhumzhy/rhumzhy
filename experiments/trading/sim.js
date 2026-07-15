@@ -32,6 +32,7 @@
 
   let rand, regime, price, seedHex;
   let hist, base, forming, tcount, trimmed;   /* hist: daily pre-history · base: live 5m */
+  let days;                                   /* completed live days, aggregated once */
 
   const normal = () => {
     let u = 0, v = 0;
@@ -77,7 +78,7 @@
     rand = mulberry32(parseInt(s, 16));
     regime = Math.floor(rand() * REGIMES.length);
     price = 1000;
-    hist = []; base = []; forming = null; tcount = 0; trimmed = 0;
+    hist = []; base = []; days = []; forming = null; tcount = 0; trimmed = 0;
     levels.length = 0;                            /* marks belong to their market */
     for (let i = 0; i < 1080; i++) hist.push(genDay());   /* ~3 years for the HTFs */
     for (let i = 0; i < 14 * DAY * TICKS_PER_CANDLE; i++) step();   /* two weeks of live tape */
@@ -85,18 +86,31 @@
     seedEl.href = '?s=' + s;
   };
 
+  /* completed live days are aggregated exactly once, the moment they close —
+     base[0] always sits on a day boundary, so days[i] mirrors base day i */
+  const syncDays = () => {
+    const whole = (base.length / DAY) | 0;
+    while (days.length < whole) {
+      const s = days.length * DAY;
+      let h = -Infinity, l = Infinity;
+      for (let j = s; j < s + DAY; j++) {
+        const c = base[j];
+        if (c.h > h) h = c.h;
+        if (c.l < l) l = c.l;
+      }
+      days.push({ o: base[s].o, h, l, c: base[s + DAY - 1].c });
+    }
+  };
+
   /* keep memory bounded: fold the oldest live days into pre-history (never mid-round) */
   const trim = () => {
-    while (base.length > 80000) {
-      const day = base.splice(0, DAY);
-      trimmed += DAY;
-      hist.push({
-        o: day[0].o,
-        h: Math.max(...day.map(c => c.h)),
-        l: Math.min(...day.map(c => c.l)),
-        c: day[day.length - 1].c
-      });
-    }
+    if (base.length <= 80000) return;
+    syncDays();
+    const folds = Math.ceil((base.length - 80000) / DAY);
+    for (let i = 0; i < folds; i++) hist.push(days[i]);
+    days.splice(0, folds);
+    base.splice(0, folds * DAY);
+    trimmed += folds * DAY;
   };
 
   /* ---- timeframes: one market, six views ---- */
@@ -109,31 +123,55 @@
   const perDisplayed = t => TFS[t].k || TFS[t].kd * DAY;   /* base candles per displayed candle */
   const ticksPerStep = () => Math.min(perDisplayed(tf), DAY);
 
-  const bucket = (arr, k) => {
-    const out = [];
-    for (let i = 0; i < arr.length; i += k) {
-      let h = -Infinity, l = Infinity;
-      const end = Math.min(i + k, arr.length);
-      for (let j = i; j < end; j++) {
-        if (arr[j].h > h) h = arr[j].h;
-        if (arr[j].l < l) l = arr[j].l;
+  /* bucket [start, end) of the live tape, k wide — direct indexing, forming as
+     virtual last element. this is the every-frame path: no copies, no closures. */
+  const bucketLive = (start, end, k) => {
+    const out = [], bl = base.length;
+    for (let i = start; i < end; i += k) {
+      const stop = Math.min(i + k, end);
+      const first = i < bl ? base[i] : forming;
+      let h = first.h, l = first.l;
+      for (let j = i + 1; j < stop; j++) {
+        const c = j < bl ? base[j] : forming;
+        if (c.h > h) h = c.h;
+        if (c.l < l) l = c.l;
       }
-      out.push({ o: arr[i].o, h, l, c: arr[end - 1].c });
+      out.push({ o: first.o, h, l, c: stop - 1 < bl ? base[stop - 1].c : forming.c });
     }
     return out;
   };
 
   const VISIBLE = 80;
   const viewCandles = () => {
-    const live = forming ? base.concat([forming]) : base;
+    const n = base.length + (forming ? 1 : 0);
     if (TFS[tf].k) {
       const k = TFS[tf].k;
-      let start = Math.max(0, live.length - VISIBLE * k);
+      let start = Math.max(0, n - VISIBLE * k);
       start -= start % k;                        /* stay on the bucket grid */
-      return bucket(live.slice(start), k).slice(-VISIBLE);
+      return bucketLive(start, n, k).slice(-VISIBLE);
     }
-    const daily = hist.concat(bucket(live, DAY));
-    return bucket(daily, TFS[tf].kd).slice(-VISIBLE);
+    /* daily and up: pre-history + completed live days + the still-open day */
+    syncDays();
+    const open = ((base.length / DAY) | 0) * DAY;
+    const part = open < n ? bucketLive(open, n, DAY)[0] : null;
+    const D = hist.length + days.length + (part ? 1 : 0);
+    const dayAt = i => i < hist.length ? hist[i]
+      : i - hist.length < days.length ? days[i - hist.length]
+      : part;
+    const kd = TFS[tf].kd;
+    const out = [];
+    for (let i = Math.max(0, Math.ceil(D / kd) - VISIBLE) * kd; i < D; i += kd) {
+      const stop = Math.min(i + kd, D);
+      const first = dayAt(i);
+      let h = first.h, l = first.l;
+      for (let j = i + 1; j < stop; j++) {
+        const c = dayAt(j);
+        if (c.h > h) h = c.h;
+        if (c.l < l) l = c.l;
+      }
+      out.push({ o: first.o, h, l, c: dayAt(stop - 1).c });
+    }
+    return out;
   };
 
   /* ---- account: a position is a stack of lots ---- */
@@ -313,7 +351,8 @@
     if (!view.length) return;
     let lo = Infinity, hi = -Infinity;
     for (const c of view) { lo = Math.min(lo, c.l); hi = Math.max(hi, c.h); }
-    if (lots.length) { lo = Math.min(lo, avgEntry()); hi = Math.max(hi, avgEntry()); }
+    const entry = lots.length ? avgEntry() : 0;
+    if (lots.length) { lo = Math.min(lo, entry); hi = Math.max(hi, entry); }
     const padP = (hi - lo) * 0.08 || 1;
     lo -= padP; hi += padP;
 
@@ -321,48 +360,56 @@
     vLo = lo; vHi = hi;
     p2y = p => H - ((p - lo) / (hi - lo)) * H;
 
-    /* levels sit under the tape */
+    /* levels sit under the tape — one stroke for all of them */
     ctx.font = '10px ui-monospace, SF Mono, Menlo, monospace';
     ctx.textAlign = 'left';
-    for (const lv of levels) {
-      if (lv < lo || lv > hi) continue;
+    if (levels.length) {
       ctx.globalAlpha = 0.55;
       ctx.strokeStyle = MUTED;
+      ctx.fillStyle = MUTED;
       ctx.lineWidth = 1;
       ctx.beginPath();
-      ctx.moveTo(0, p2y(lv)); ctx.lineTo(W - GUTTER, p2y(lv));
+      for (const lv of levels) {
+        if (lv < lo || lv > hi) continue;
+        const y = p2y(lv);
+        ctx.moveTo(0, y); ctx.lineTo(W - GUTTER, y);
+      }
       ctx.stroke();
-      ctx.fillStyle = MUTED;
-      ctx.fillText(lv.toFixed(1), W - GUTTER + 8, p2y(lv) - 3);
+      for (const lv of levels)
+        if (lv >= lo && lv <= hi) ctx.fillText(lv.toFixed(1), W - GUTTER + 8, p2y(lv) - 3);
       ctx.globalAlpha = 1;
     }
 
-    view.forEach((c, i) => {
-      const x = (i + (VISIBLE - view.length)) * cw + cw / 2;
-      ctx.strokeStyle = MUTED;
-      ctx.lineWidth = 1;
-      ctx.beginPath();
+    /* candles in three strokes: every wick, every down body, every up body */
+    const bw = Math.max(cw * 0.55, 2);
+    const x0 = (VISIBLE - view.length) * cw + cw / 2;
+    ctx.strokeStyle = MUTED;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let i = 0; i < view.length; i++) {
+      const c = view[i], x = x0 + i * cw;
       ctx.moveTo(x, p2y(c.h)); ctx.lineTo(x, p2y(c.l));
-      ctx.stroke();
-      const bw = Math.max(cw * 0.55, 2);
-      const yo = p2y(c.o), yc = p2y(c.c);
-      const top = Math.min(yo, yc), hgt = Math.max(Math.abs(yc - yo), 1);
-      if (c.c >= c.o) {            /* up — hollow */
-        ctx.fillStyle = PAPER; ctx.strokeStyle = INK;
-        ctx.fillRect(x - bw / 2, top, bw, hgt);
-        ctx.strokeRect(x - bw / 2, top, bw, hgt);
-      } else {                     /* down — solid */
-        ctx.fillStyle = INK;
-        ctx.fillRect(x - bw / 2, top, bw, hgt);
+    }
+    ctx.stroke();
+    for (let pass = 0; pass < 2; pass++) {       /* 0: down — solid · 1: up — hollow */
+      ctx.beginPath();
+      for (let i = 0; i < view.length; i++) {
+        const c = view[i];
+        if ((c.c >= c.o) !== !!pass) continue;
+        const yo = p2y(c.o), yc = p2y(c.c);
+        ctx.rect(x0 + i * cw - bw / 2, Math.min(yo, yc), bw, Math.max(Math.abs(yc - yo), 1));
       }
-    });
+      ctx.fillStyle = pass ? PAPER : INK;
+      ctx.fill();
+      if (pass) { ctx.strokeStyle = INK; ctx.stroke(); }
+    }
 
     /* entry — the one color: where you stand. thickness = size on. */
     if (lots.length) {
       ctx.strokeStyle = ACCENT;
       ctx.lineWidth = lots.length;
       ctx.beginPath();
-      ctx.moveTo(0, p2y(avgEntry())); ctx.lineTo(W - GUTTER, p2y(avgEntry()));
+      ctx.moveTo(0, p2y(entry)); ctx.lineTo(W - GUTTER, p2y(entry));
       ctx.stroke();
     }
 
