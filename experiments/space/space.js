@@ -59,7 +59,7 @@
   let width = 1;                         /* 0 mono · 1 at the corners · 2 past the walls */
 
   const eqT = i => 0.5 - (eqGain[i] / 12) * 0.45;    /* boost → near */
-  const VOLRY = 0.5;                                 /* the right-wall slider height */
+  const VOLRY = eqRy[1];                             /* the fader rides the middle line */
   const volT = () => 0.95 - vol * 0.9;               /* loud → near */
 
   /* registers: where the crossovers sit, and the color each side of them wears */
@@ -144,7 +144,7 @@
     ctx.strokeStyle = MUTED;
     ctx.lineWidth = 1;
     /* grid */
-    ctx.globalAlpha = 0.08;
+    ctx.globalAlpha = 0.12;
     ctx.beginPath();
     for (const ry of OCTAVES) {
       seg(P(-1, ry, 0), P(-1, ry, 1));   /* left wall  */
@@ -162,7 +162,7 @@
     }
     ctx.stroke();
     /* frame + the tracks the handles ride */
-    ctx.globalAlpha = 0.2;
+    ctx.globalAlpha = 0.28;
     ctx.beginPath();
     for (const t of [0, 1]) {
       const a = P(-1, 0, t), b = P(1, 0, t), c = P(1, 1, t), d = P(-1, 1, t);
@@ -174,9 +174,10 @@
     seg(P(-2, 0, 1), P(2, 0, 1));        /* width track, past both corners */
     ctx.stroke();
     ctx.globalAlpha = 0.3;
-    ctx.strokeStyle = INK;               /* volume track wears its handle's ink */
+    ctx.strokeStyle = INK;               /* the right wall rivals the left: three ink
+                                            lines, the fader rides the middle one */
     ctx.beginPath();
-    seg(P(1, VOLRY, 0), P(1, VOLRY, 1));
+    for (const ry of eqRy) seg(P(1, ry, 0), P(1, ry, 1));
     ctx.stroke();
     for (let i = 0; i < 3; i++) {        /* eq tracks wear their register */
       ctx.strokeStyle = EQCOL[i];
