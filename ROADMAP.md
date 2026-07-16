@@ -21,6 +21,8 @@
 
 ## later
 
+- notes: voice memos — record in capture mode, web-speech transcription, audio field already reserved in schema
+- speech: polish pass — document localStorage schema in-page (agent-accessible principle), sparkline last-point clipping, record-button focus ring, silence-threshold tuning
 - trading sim: real replay mode — anonymous random windows of real historical candles committed as data, identity hidden; pressure-test subskill transfer. respect the user's timeframes: 1h and above, 5m floor
 - mix feedback/scoring (tiny cloudflare worker + kv, only when earned)
 - more data ideas (unnamed — only if a real one appears)
