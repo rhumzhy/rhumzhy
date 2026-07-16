@@ -1,6 +1,7 @@
 {
   "habits": ["reading", "meditation", "exercise"],
   "log": {
-    "2026-07-08": { "reading": 54, "exercise": 30, "meditation": 15 }
+    "2026-07-08": { "reading": 54, "exercise": 30 },
+    "2026-07-16": { "exercise": 30, "meditation": 15 }
   }
 }
