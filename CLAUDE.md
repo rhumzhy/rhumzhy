@@ -22,6 +22,35 @@ live at: https://rhumzhy.pages.dev (cloudflare pages, push-to-live from main)
   home, a filled square means done, red means the one thing that matters). the site
   should feel like a rabbit hole you explore, not a building with signage.
 
+## standing ideas & principles
+
+these apply to every current and future tool on the site.
+
+**site structure**
+- taxonomy: everything starts under experiments, which has two states —
+  ongoing/live, and failed/archived. the good ones get promoted to work
+  (section name may change later). complements the graduation rule in VISION.md.
+
+**standing technical principles (every tool)**
+- local-first always: each tool stores its own data in the visitor's browser
+  (localStorage/IndexedDB). no backend, no accounts, zero privacy issues,
+  free for anyone with internet + a browser.
+- static-hosting compatible (cloudflare).
+- data is never trapped: every tool gets plain-file export/import
+  (markdown/json) with a clean, documented storage schema.
+- agent-accessible by design: tools should be usable by a visitor's OWN ai
+  agent (claude code skill or mcp server) so their model adds intelligence to
+  the tools — free both ways, no api costs on this side. practical paths:
+  file export an agent can read, or a local mcp server sharing a file the web
+  app reads/writes. design schemas now so this bolts on later.
+
+**design philosophy: "dump now, sort later"**
+- batch processing over interleaved organizing (minecraft chest-sorting model):
+  capture/input is zero-friction all day; organizing is a separate dedicated
+  batch mode with tools built for fast sorting. never force organizing at the
+  moment of capture. look for this pattern in future tools — batching is a
+  reusable product idea.
+
 ## session protocol
 
 **build session ("continue"):**
