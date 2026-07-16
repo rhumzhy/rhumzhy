@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>speech — rhumzhy</title>
+<link rel="stylesheet" href="/assets/base.css">
+<style>
+  body{
+    padding:clamp(2rem, 6vh, 4rem) clamp(1.2rem, 6vw, 5rem) 12vh;
+    display:flex; flex-direction:column;
+  }
+  main{ width:100%; max-width:38rem; margin:0 auto; }
+  .back{ margin-bottom:clamp(1.6rem, 5vh, 3rem); }
+
+  .stage{ display:none; }
+  main[data-state="ready"]  .ready { display:block; }
+  main[data-state="live"]   .live  { display:block; }
+  main[data-state="result"] .result{ display:block; }
+  main[data-state="live"]   #history{ display:none; }
+
+  /* ready — the prompt */
+  .topline{ display:flex; align-items:baseline; gap:1rem; }
+  #topic{
+    flex:1; background:none; border:0;
+    border-bottom:1px solid var(--muted);
+    color:var(--ink); font-size:1.15rem; font-family:inherit;
+    padding:0.4em 0; letter-spacing:-0.01em;
+  }
+  #topic::placeholder{ color:var(--muted); }
+  #topic:focus{ outline:none; border-bottom-color:var(--ink); }
+
+  .targets{ display:flex; flex-wrap:wrap; gap:0.9rem 1.4rem; margin:1.8rem 0 0; }
+  .target{
+    background:none; border:0; cursor:pointer; padding:0.2em 0;
+    font-family:var(--mono); font-size:0.72rem; letter-spacing:0.16em;
+    color:var(--muted); -webkit-tap-highlight-color:transparent;
+  }
+  .target.on{ color:var(--ink); }
+  .target:hover, .target:focus-visible{ color:var(--ink); outline:none; }
+
+  .center{ display:flex; flex-direction:column; align-items:center; gap:1.2rem;
+    margin:clamp(2.4rem,7vh,3.6rem) 0 1.4rem; }
+
+  .rec{
+    width:5.6rem; height:5.6rem; border-radius:50%;
+    border:1.5px solid var(--ink); background:none;
+    display:grid; place-items:center; cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+    transition:transform .28s var(--ease), border-color .28s var(--ease);
+  }
+  .rec::after{ content:""; width:1.05rem; height:1.05rem; border-radius:50%;
+    background:var(--accent); transition:transform .28s var(--ease); }
+  .rec:hover, .rec:focus-visible{ outline:none; transform:scale(1.04); }
+  .rec:active::after{ transform:scale(0.9); }
+
+  .beat{ min-height:1.1em; }
+
+  /* live — the room */
+  .liverow{ display:flex; align-items:baseline; justify-content:space-between; gap:1rem; }
+  #timer{ font-family:var(--mono); font-size:2.4rem; letter-spacing:-0.02em; color:var(--ink); }
+  .listen{ display:flex; align-items:center; gap:0.5rem; }
+  .dot{ width:0.6rem; height:0.6rem; border-radius:50%; background:var(--accent); opacity:0.5; }
+  @media (prefers-reduced-motion:no-preference){
+    main[data-state="live"] .dot{ animation:breathe 2s var(--ease) infinite; }
+  }
+  @keyframes breathe{ 0%,100%{opacity:0.35;} 50%{opacity:0.85;} }
+  #fillcue{ font-family:var(--mono); font-size:0.72rem; letter-spacing:0.16em; color:var(--muted); transition:color .18s var(--ease); }
+  #fillcue.flash{ color:var(--accent); }
+
+  #cue{ display:block; margin:0.6rem 0 0; }
+  #stream{
+    margin:1.6rem 0; min-height:6rem; max-height:34vh; overflow-y:auto;
+    color:var(--muted); font-size:1.05rem; line-height:1.6; letter-spacing:-0.01em;
+  }
+  #stream b{ color:var(--ink); font-weight:400; }
+
+  .stopwrap{ display:flex; justify-content:center; margin-top:0.8rem; }
+  .stop{
+    width:3.4rem; height:3.4rem; border-radius:50%;
+    border:1px solid var(--muted); background:none; cursor:pointer;
+    display:grid; place-items:center; -webkit-tap-highlight-color:transparent;
+    transition:border-color .28s var(--ease);
+  }
+  .stop::after{ content:""; width:0.9rem; height:0.9rem; background:var(--ink); }  /* square = stop */
+  .stop:hover, .stop:focus-visible{ outline:none; border-color:var(--ink); }
+
+  /* result — the number */
+  .score{ font-size:clamp(4.5rem,22vw,7rem); font-weight:400; letter-spacing:-0.03em;
+    line-height:1; color:var(--ink); }
+  .score.best{ color:var(--accent); }
+  #verdict{ display:block; margin-top:0.5rem; }
+  #verdict .new{ color:var(--accent); }
+  .subs{ font-family:var(--mono); font-size:0.72rem; letter-spacing:0.1em;
+    color:var(--muted); margin-top:1.6rem; line-height:2; }
+  .subs b{ color:var(--ink); font-weight:400; }
+  .subs sup{ color:var(--accent); }
+  #footnote{ margin-top:0.8rem; }
+  #rtext{ margin-top:1.8rem; color:var(--ink); font-size:1rem; line-height:1.65;
+    letter-spacing:-0.01em; max-height:32vh; overflow-y:auto; }
+  .again{ display:flex; justify-content:center; margin-top:2.2rem; }
+  .again .rec{ width:4.4rem; height:4.4rem; }
+  .again .rec::after{ width:0.85rem; height:0.85rem; }
+
+  /* history */
+  #history{ margin-top:clamp(3rem,10vh,5rem); }
+  #spark{ display:block; width:100%; max-width:14rem; height:34px; margin-bottom:1.2rem; }
+  #spark polyline{ fill:none; stroke:var(--muted); stroke-width:1.2; }
+  #spark .last{ fill:var(--accent); }
+  #hlist{ list-style:none; display:flex; flex-direction:column; gap:0.55rem; }
+  #hlist li{ font-family:var(--mono); font-size:0.72rem; letter-spacing:0.06em; color:var(--ink);
+    display:flex; gap:1rem; }
+  #hlist .hdate{ color:var(--muted); min-width:5.5em; }
+  #hlist .htopic{ flex:1; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .io{ margin-top:1.4rem; display:flex; gap:1.4rem; }
+  button.mark{ background:none; border:0; cursor:pointer; padding:0.2em 0; -webkit-tap-highlight-color:transparent; }
+  button.mark:hover, button.mark:focus-visible{ color:var(--ink); outline:none; }
+
+  /* paste fallback */
+  #paste{ margin-top:2rem; }
+  #paste textarea{ width:100%; min-height:6rem; background:none; color:var(--ink);
+    border:1px solid var(--muted); border-radius:2px; padding:0.8rem; font-family:inherit;
+    font-size:1rem; line-height:1.6; resize:vertical; }
+  #paste textarea:focus{ outline:none; border-color:var(--ink); }
+  .pasterow{ display:flex; align-items:baseline; gap:1.4rem; margin-top:0.8rem; }
+  #pdur{ width:4em; background:none; border:0; border-bottom:1px solid var(--muted);
+    color:var(--ink); font-family:var(--mono); font-size:0.72rem; padding:0.2em 0; }
+  #pdur:focus{ outline:none; border-bottom-color:var(--ink); }
+
+  .muted{ color:var(--muted); }
+  .note{ color:var(--muted); font-size:0.85rem; margin-top:0.8rem; line-height:1.5; }
+  .empty{ color:var(--muted); font-size:1rem; }
+</style>
+</head>
+<body>
+
+  <main class="rise" id="app" data-state="ready">
+    <a class="back" href="/experiments/" aria-label="back">←</a>
+
+    <!-- ready -->
+    <section class="stage ready">
+      <div class="topline">
+        <input id="topic" type="text" placeholder="a topic to speak on" autocomplete="off" spellcheck="false">
+        <button class="mark" id="giveone">give me one</button>
+      </div>
+      <div class="targets" id="targets"></div>
+      <div class="center">
+        <button class="rec" id="go" aria-label="press to speak"></button>
+        <span class="mark beat" id="beat"></span>
+      </div>
+      <p><button class="mark muted" id="pastetoggle">no mic? paste a transcript</button></p>
+    </section>
+
+    <!-- live -->
+    <section class="stage live">
+      <div class="liverow">
+        <span id="timer">3:00</span>
+        <span class="listen"><span class="dot"></span><span id="fillcue">0 fillers</span></span>
+      </div>
+      <span class="mark" id="cue"></span>
+      <div id="stream" aria-live="off"></div>
+      <div class="stopwrap"><button class="stop" id="halt" aria-label="stop"></button></div>
+    </section>
+
+    <!-- result -->
+    <section class="stage result">
+      <div class="score" id="score">0</div>
+      <span class="mark" id="verdict"></span>
+      <div class="subs" id="subs"></div>
+      <span class="mark muted" id="footnote">metaphor is an approximate count</span>
+      <div id="rtext"></div>
+      <div class="again"><button class="rec" id="again" aria-label="speak again"></button></div>
+    </section>
+
+    <!-- paste fallback -->
+    <section id="paste" hidden>
+      <textarea id="ptext" placeholder="paste or type what you said" spellcheck="false"></textarea>
+      <div class="pasterow">
+        <span class="mark">spoke for <input id="pdur" type="number" min="10" max="900" value="180"> sec</span>
+        <button class="mark" id="pscore">score it</button>
+      </div>
+      <p class="note" id="pnote"></p>
+    </section>
+
+    <!-- history -->
+    <section id="history" hidden>
+      <svg id="spark" viewBox="0 0 200 34" preserveAspectRatio="none" aria-hidden="true"></svg>
+      <ul id="hlist"></ul>
+      <p class="io">
+        <button class="mark" id="export">export</button>
+        <button class="mark" id="import">import</button>
+        <input type="file" id="ifile" accept="application/json" hidden>
+      </p>
+    </section>
+
+    <noscript><p class="empty">this one needs javascript and a microphone.</p></noscript>
+  </main>
+
+<script>
+(function(){
+  "use strict";
+  var $ = function(s){ return document.querySelector(s); };
+  var app = $('#app');
+
+  // --- config ---------------------------------------------------------------
+  var TARGETS = ['zero fillers','one metaphor a minute','end every sentence','vary your rhythm','richer words'];
+  var TOPICS = [
+    'a book that changed how you think',
+    'explain compound interest to a teenager',
+    'the last thing that genuinely moved you',
+    'why you make things',
+    'a place you keep returning to',
+    'defend an opinion most people disagree with',
+    'what you were wrong about a year ago',
+    'the difference between busy and productive',
+    'a skill worth ten years of practice',
+    'what money can and cannot buy',
+    'describe your ideal ordinary day',
+    'the one habit you would give someone'
+  ];
+  var FILLER_SINGLES = new Set(['um','uh','uhm','umm','erm','er','ah','hmm','like','so','right','basically','literally','actually']);
+  var FILLER_PHRASES = ['you know','i mean','kind of','sort of','you know what i mean'];
+  var KEY = 'speech.sessions.v1';
+  var LEN = 180;            // 3 minutes
+  var SIL = 0.02;           // rms silence threshold (tunable)
+  var PAUSE_MIN = 0.7;      // silence over this counts as a pause
+  var STALL = 1.6;          // silence over this is a stall (retrieval fail)
+
+  // --- state ----------------------------------------------------------------
+  var sessions = load();
+  var target = TARGETS[0];
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  var recog=null, stream=null, actx=null, analyser=null, buf=null;
+  var recording=false, loopId=0, startT=0;
+  var segments=[], interim='', pauses=[], inSil=false, silStart=0, fillLive=0;
+
+  // --- helpers --------------------------------------------------------------
+  function load(){ try{ return JSON.parse(localStorage.getItem(KEY)) || []; }catch(e){ return []; } }
+  function persist(){ localStorage.setItem(KEY, JSON.stringify(sessions)); }
+  function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
+  function words(s){ return (s.toLowerCase().match(/[a-z']+/g)) || []; }
+  function fmt(s){ var m=Math.floor(s/60), x=Math.floor(s%60); return m+':'+(x<10?'0':'')+x; }
+  function best(){ return sessions.length ? Math.max.apply(null, sessions.map(function(x){return x.composite;})) : null; }
+
+  // --- scoring --------------------------------------------------------------
+  function mattr(ws, W){
+    W = W || 50;
+    if(!ws.length) return 0;
+    if(ws.length <= W) return new Set(ws).size / ws.length;
+    var sum=0, n=0;
+    for(var i=0; i+W<=ws.length; i++){
+      sum += new Set(ws.slice(i,i+W)).size / W; n++;
+    }
+    return sum/n;
+  }
+  function metrics(transcript, segs, dur, ps, hasAudio){
+    var min = Math.max(dur/60, 0.1);
+    var ws = words(transcript);
+    var total = ws.length;
+    var low = ' ' + transcript.toLowerCase().replace(/[^a-z' ]+/g,' ').replace(/\s+/g,' ') + ' ';
+
+    // fillers
+    var fill=0, i;
+    for(i=0;i<ws.length;i++){ if(FILLER_SINGLES.has(ws[i])) fill++; }
+    for(i=0;i<FILLER_PHRASES.length;i++){
+      var re = new RegExp('\\b'+FILLER_PHRASES[i].replace(/ /g,'\\s+')+'\\b','g');
+      var m = low.match(re); if(m) fill += m.length;
+    }
+    var fpm = fill/min;
+    var sFill = clamp(100 - fpm*10, 0, 100);
+
+    // diversity
+    var mat = mattr(ws);
+    var sDiv = clamp((mat-0.5)/0.3*100, 0, 100);
+
+    // rhythm — segment lengths (segments come from pause-gap phrasing)
+    var lens = segs.map(function(s){ return words(s).length; }).filter(function(n){ return n>0; });
+    var avg = lens.length ? lens.reduce(function(a,b){return a+b;},0)/lens.length : 0;
+    var varc = lens.length ? lens.reduce(function(a,b){return a+(b-avg)*(b-avg);},0)/lens.length : 0;
+    var sd = Math.sqrt(varc);
+    var sRhythm = clamp(sd/8*100, 0, 100);
+
+    // pauses
+    var pc, longs;
+    if(hasAudio){ pc = ps.length; longs = ps.filter(function(d){return d>STALL;}).length; }
+    else { pc = Math.max(0, segs.length-1); longs = 0; }
+    var ppm = pc/min;
+    var sPause = clamp(100 - longs*15 - Math.max(0, ppm-8)*5, 0, 100);
+
+    // metaphor (approximate marker heuristic)
+    var metRe = /\b(like an?\s|as if\b|as though\b|reminds me of\b|kind of like\b|it'?s like\b)/g;
+    var met = (low.match(metRe) || []).length;
+    var sMet = clamp(met*25, 0, 100);
+
+    var composite = Math.round(.35*sFill + .20*sPause + .20*sDiv + .15*sRhythm + .10*sMet);
+    return {
+      composite: composite,
+      sub: { fillers:Math.round(sFill), vocab:Math.round(sDiv), rhythm:Math.round(sRhythm), pauses:Math.round(sPause), metaphor:Math.round(sMet) },
+      raw: { fpm:+fpm.toFixed(1), mattr:+mat.toFixed(2), avgLen:+avg.toFixed(1), sd:+sd.toFixed(1), pauses:pc, stalls:longs, met:met, total:total },
+      hasAudio: hasAudio
+    };
+  }
+
+  // --- render ---------------------------------------------------------------
+  var SUBORDER = [['fillers','fillers'],['pauses','pauses'],['vocab','vocab'],['rhythm','rhythm'],['metaphor','metaphor']];
+  function state(s){ app.dataset.state = s; }
+
+  function renderReady(){
+    var b = best();
+    $('#beat').textContent = b===null ? '' : 'best ' + b;
+    renderHistory();
+  }
+  function renderResult(r, transcript, isBest){
+    var el = $('#score');
+    el.textContent = r.composite;
+    el.classList.toggle('best', isBest);
+    $('#verdict').innerHTML = isBest ? '<span class="new">new best</span>' : 'best ' + best();
+    $('#subs').innerHTML = SUBORDER.map(function(k){
+      var mark = k[0]==='metaphor' ? '<sup>*</sup>' : '';
+      return k[1] + ' <b>' + r.sub[k[0]] + '</b>' + mark;
+    }).join('&nbsp;&nbsp;·&nbsp;&nbsp;');
+    $('#rtext').textContent = transcript || '—';
+    state('result');
+  }
+  function renderHistory(){
+    var h = $('#history');
+    if(!sessions.length){ h.hidden = true; return; }
+    h.hidden = false;
+    var vals = sessions.map(function(s){ return s.composite; });
+    var svg = $('#spark');
+    if(vals.length >= 2){
+      var W=200, H=34, n=vals.length;
+      var pts = vals.map(function(v,i){
+        var x = (i/(n-1))*W;
+        var y = H - (v/100)*H;
+        return x.toFixed(1)+','+y.toFixed(1);
+      }).join(' ');
+      var lx = W, ly = H - (vals[n-1]/100)*H;
+      svg.innerHTML = '<polyline points="'+pts+'"></polyline><circle class="last" cx="'+lx.toFixed(1)+'" cy="'+ly.toFixed(1)+'" r="2.4"></circle>';
+      svg.style.display = 'block';
+    } else { svg.style.display = 'none'; }
+    var list = sessions.slice().reverse().slice(0, 30).map(function(s){
+      return '<li><span class="hdate">'+s.date+'</span><span class="htopic">'+esc(s.topic||'—')+'</span><span>'+s.composite+'</span></li>';
+    }).join('');
+    $('#hlist').innerHTML = list;
+  }
+  function esc(s){ var d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
+
+  // --- save -----------------------------------------------------------------
+  function commit(r, topic, transcript, dur){
+    var prev = best();
+    var isBest = prev===null || r.composite > prev;
+    sessions.push({
+      date: new Date().toISOString().slice(0,10),
+      t: Date.now(),
+      topic: topic,
+      target: target,
+      dur: Math.round(dur),
+      composite: r.composite,
+      sub: r.sub,
+      raw: r.raw,
+      transcript: transcript
+    });
+    persist();
+    renderResult(r, transcript, isBest);
+    renderHistory();
+  }
+
+  // --- live loop ------------------------------------------------------------
+  function loop(){
+    // timer
+    var el = (performance.now() - startT) / 1000;
+    var left = Math.max(0, LEN - el);
+    $('#timer').textContent = fmt(left);
+    // meter / pause detection
+    if(analyser){
+      analyser.getByteTimeDomainData(buf);
+      var sum=0;
+      for(var i=0;i<buf.length;i++){ var v=(buf[i]-128)/128; sum += v*v; }
+      var rms = Math.sqrt(sum/buf.length);
+      var now = performance.now();
+      if(rms < SIL){
+        if(!inSil){ inSil=true; silStart=now; }
+      } else {
+        if(inSil){ var d=(now-silStart)/1000; if(d>PAUSE_MIN) pauses.push(d); inSil=false; }
+        $('.dot').style.opacity = String(0.4 + Math.min(0.6, rms*10));
+      }
+    }
+    if(left <= 0){ stop(); return; }
+    loopId = requestAnimationFrame(loop);
+  }
+
+  function updateLive(){
+    var joined = segments.join(' ');
+    $('#stream').innerHTML = '<b>' + esc(joined) + '</b> ' + esc(interim);
+    $('#stream').scrollTop = $('#stream').scrollHeight;
+    // live filler tick
+    var ws = words(joined + ' ' + interim);
+    var c=0; for(var i=0;i<ws.length;i++){ if(FILLER_SINGLES.has(ws[i])) c++; }
+    var cue = $('#fillcue');
+    cue.textContent = c + (c===1 ? ' filler' : ' fillers');
+    if(c > fillLive){
+      cue.classList.add('flash');
+      setTimeout(function(){ cue.classList.remove('flash'); }, 260);
+    }
+    fillLive = c;
+  }
+
+  // --- recognition ----------------------------------------------------------
+  function makeRecog(){
+    var r = new SR();
+    r.continuous = true;
+    r.interimResults = true;
+    r.lang = 'en-US';
+    r.onresult = function(e){
+      interim = '';
+      for(var i=e.resultIndex; i<e.results.length; i++){
+        var res = e.results[i];
+        if(res.isFinal){ segments.push(res[0].transcript.trim()); }
+        else interim += res[0].transcript;
+      }
+      updateLive();
+    };
+    r.onend = function(){ if(recording){ try{ r.start(); }catch(_){ } } };
+    r.onerror = function(e){
+      if(e.error==='not-allowed' || e.error==='service-not-allowed'){ failMic('mic access was blocked.'); }
+    };
+    return r;
+  }
+
+  function failMic(msg){
+    recording = false;
+    cancelAnimationFrame(loopId);
+    if(stream){ stream.getTracks().forEach(function(t){ t.stop(); }); }
+    state('ready');
+    openPaste(msg || 'couldn’t reach the mic — paste what you said instead.');
+  }
+
+  // --- start / stop ---------------------------------------------------------
+  async function start(){
+    if(!SR){ openPaste('this browser has no speech recognition — paste what you said instead.'); return; }
+    // mic stream is best-effort: it powers precise pause detection, but recognition
+    // is the core and must survive without it. if this fails, pauses go segment-based
+    // and a truly-denied mic surfaces via recognition's own not-allowed error.
+    try{
+      stream = await navigator.mediaDevices.getUserMedia({ audio:true });
+    }catch(e){ stream = null; }
+    if(stream){
+      try{
+        actx = new (window.AudioContext || window.webkitAudioContext)();
+        var src = actx.createMediaStreamSource(stream);
+        analyser = actx.createAnalyser(); analyser.fftSize = 512;
+        src.connect(analyser);
+        buf = new Uint8Array(analyser.fftSize);
+      }catch(e){ analyser = null; }
+    }
+    segments=[]; interim=''; pauses=[]; inSil=false; fillLive=0;
+    $('#stream').innerHTML = ''; $('#fillcue').textContent = '0 fillers';
+    $('#cue').textContent = target ? '→ ' + target : '';
+    recog = makeRecog();
+    recording = true;
+    state('live');
+    startT = performance.now();
+    try{ recog.start(); }catch(e){ }
+    loopId = requestAnimationFrame(loop);
+  }
+
+  function stop(){
+    if(!recording) return;
+    recording = false;
+    cancelAnimationFrame(loopId);
+    if(recog){ try{ recog.stop(); }catch(e){} }
+    if(stream){ stream.getTracks().forEach(function(t){ t.stop(); }); }
+    var hasAudio = !!analyser;
+    if(actx){ try{ actx.close(); }catch(e){} actx=null; analyser=null; }
+    var dur = Math.min(LEN, (performance.now() - startT)/1000);
+    if(interim.trim()){ segments.push(interim.trim()); interim=''; }
+    var transcript = segments.join(' ').replace(/\s+/g,' ').trim();
+    if(words(transcript).length < 5){
+      state('ready');
+      openPaste('didn’t catch enough — check the mic, or paste what you said.');
+      return;
+    }
+    var topic = $('#topic').value.trim();
+    var r = metrics(transcript, segments, dur, pauses, hasAudio);
+    commit(r, topic, transcript, dur);
+  }
+
+  // --- paste fallback -------------------------------------------------------
+  function openPaste(msg){
+    var p = $('#paste');
+    p.hidden = false;
+    $('#pnote').textContent = msg || '';
+    p.scrollIntoView({ behavior:'smooth', block:'center' });
+    $('#ptext').focus();
+  }
+  function scorePaste(){
+    var text = $('#ptext').value.replace(/\s+/g,' ').trim();
+    if(words(text).length < 5){ $('#pnote').textContent = 'a little more to work with, first.'; return; }
+    var dur = clamp(parseInt($('#pdur').value,10) || LEN, 10, 900);
+    var segs = text.split(/[.!?\n]+/).map(function(s){ return s.trim(); }).filter(Boolean);
+    if(segs.length < 2) segs = [text];
+    var topic = $('#topic').value.trim();
+    var r = metrics(text, segs, dur, [], false);
+    $('#paste').hidden = true;
+    $('#ptext').value = '';
+    commit(r, topic, text, dur);
+  }
+
+  // --- targets --------------------------------------------------------------
+  function renderTargets(){
+    $('#targets').innerHTML = TARGETS.map(function(t,i){
+      return '<button class="target'+(i===0?' on':'')+'" data-t="'+esc(t)+'">'+esc(t)+'</button>';
+    }).join('');
+  }
+
+  // --- io -------------------------------------------------------------------
+  function exportJSON(){
+    var blob = new Blob([JSON.stringify(sessions, null, 2)], { type:'application/json' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url; a.download = 'speech.json';
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a); URL.revokeObjectURL(url);
+  }
+  function importJSON(file){
+    var fr = new FileReader();
+    fr.onload = function(){
+      try{
+        var data = JSON.parse(fr.result);
+        if(Array.isArray(data)){ sessions = data; persist(); renderReady(); }
+      }catch(e){ }
+    };
+    fr.readAsText(file);
+  }
+
+  // --- wire -----------------------------------------------------------------
+  renderTargets();
+  renderReady();
+
+  $('#targets').addEventListener('click', function(e){
+    var b = e.target.closest('.target'); if(!b) return;
+    Array.prototype.forEach.call(this.querySelectorAll('.target'), function(x){ x.classList.remove('on'); });
+    b.classList.add('on'); target = b.dataset.t;
+  });
+  $('#giveone').addEventListener('click', function(){
+    $('#topic').value = TOPICS[Math.floor(Math.random()*TOPICS.length)];
+  });
+  $('#go').addEventListener('click', start);
+  $('#again').addEventListener('click', function(){ state('ready'); renderReady(); });
+  $('#halt').addEventListener('click', stop);
+  $('#pastetoggle').addEventListener('click', function(){ openPaste(''); });
+  $('#pscore').addEventListener('click', scorePaste);
+  $('#export').addEventListener('click', exportJSON);
+  $('#import').addEventListener('click', function(){ $('#ifile').click(); });
+  $('#ifile').addEventListener('change', function(){ if(this.files[0]) importJSON(this.files[0]); this.value=''; });
+
+  if(!SR){ $('#pastetoggle').textContent = 'no speech recognition here — paste a transcript'; }
+})();
+</script>
+
+</body>
+</html>

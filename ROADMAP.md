@@ -16,6 +16,7 @@
 - [x] it9 · trading sim III — round record in localStorage, per-mode summary panel, export/import
 - [x] it10 · trading sim IV — top-down: 1M · 1w · 1d · 4h · 1h · 5m over one market, adaptive pacing, levels persist across views
 - [ ] it11 · tend the tree — consistency sweep, graduate earned experiments, prune later
+- [x] it13 · speech — the retrieval drill: 3-min speak → web-speech transcript → composite score (fillers 35 · pauses 20 · vocab 20 · rhythm 15 · metaphor 10*), best-to-beat, localStorage record + export/import, paste fallback; all client-side, zero cost
 
 ## later
 
