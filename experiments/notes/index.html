@@ -22,9 +22,9 @@
   main[data-mode="sort"]    .sort   { display:flex; }
 
   /* ---- capture — the page is the input ---- */
-  .capture{ justify-content:center; max-width:38rem; width:100%; margin:0 auto; }
+  .capture{ max-width:38rem; width:100%; margin:0 auto; }
   #in{
-    width:100%; min-height:9rem; background:none; border:0; resize:none;
+    width:100%; flex:1; min-height:9rem; background:none; border:0; resize:none;
     color:var(--ink); font-family:inherit; font-size:1.25rem; line-height:1.6;
     letter-spacing:-0.01em; caret-color:var(--accent);
   }
@@ -175,6 +175,9 @@
   function uid(p){ return p + Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
   function iso(){ return new Date().toISOString(); }
   function esc(s){ var d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
+  /* esc() is text-safe only — innerHTML does not escape quotes. anything landing
+     inside an attribute needs this, or an imported id can close the attribute. */
+  function escAttr(s){ return esc(s).replace(/"/g, '&quot;'); }
 
   // ---- idb ------------------------------------------------------------------
   function open(){
@@ -245,11 +248,11 @@
     fi = Math.min(fi, Math.max(0, list.length-1));
     $('#pile').innerHTML = list.map(function(n,i){
       var first = (n.text.split('\n')[0] || '—');
-      return '<li data-id="'+n.id+'" class="'+(sel.has(n.id)?'selected ':'')+(i===fi?'focused':'')+'">'
+      return '<li data-id="'+escAttr(n.id)+'" class="'+(sel.has(n.id)?'selected ':'')+(i===fi?'focused':'')+'">'
         + '<span class="sel">■</span>'
         + '<span class="txt">'+esc(first)+'</span>'
-        + '<span class="when">'+when(n.created)+'</span>'
-        + '<span class="open" data-open="'+n.id+'" role="button" tabindex="0" aria-label="open">›</span>'
+        + '<span class="when">'+esc(when(n.created))+'</span>'
+        + '<span class="open" data-open="'+escAttr(n.id)+'" role="button" tabindex="0" aria-label="open">›</span>'
         + '</li>';
     }).join('');
     $('#pileempty').hidden = !!list.length;
@@ -271,7 +274,7 @@
       { id:'archive', name:'archive', key:'', cnt:notes.filter(function(n){return n.state==='archived';}).length }
     ]);
     $('#rail').innerHTML = rows.map(function(r){
-      return '<li class="'+(view===r.id?'on':'')+'" data-id="'+r.id+'">'
+      return '<li class="'+(view===r.id?'on':'')+'" data-id="'+escAttr(r.id)+'">'
         + '<button class="rname">'+esc(r.name)+'</button>'
         + '<span>'+(r.key?'<span class="key">'+r.key+'</span> ':'')+'<span class="cnt">'+r.cnt+'</span></span>'
         + '</li>';
@@ -319,10 +322,10 @@
       return '<div class="pane '+(i===active?'active':'')+'" data-i="'+i+'">'
         + '<div class="panehead"><span class="mark">'+when(n.created)+'</span>'
         + '<button class="mark" data-close="'+i+'">close</button></div>'
-        + '<textarea data-edit="'+id+'" spellcheck="false">'+esc(n.text)+'</textarea>'
+        + '<textarea data-edit="'+escAttr(id)+'" spellcheck="false">'+esc(n.text)+'</textarea>'
         + '<div class="paneact">'
-        + '<button class="mark" data-merge="'+id+'">merge selected in</button>'
-        + '<button class="mark" data-split="'+id+'">split on ---</button>'
+        + '<button class="mark" data-merge="'+escAttr(id)+'">merge selected in</button>'
+        + '<button class="mark" data-split="'+escAttr(id)+'">split on ---</button>'
         + '</div></div>';
     }).join('');
   }

@@ -51,7 +51,8 @@
   }
   .rec::after{ content:""; width:1.05rem; height:1.05rem; border-radius:50%;
     background:var(--accent); transition:transform .28s var(--ease); }
-  .rec:hover, .rec:focus-visible{ outline:none; transform:scale(1.04); }
+  .rec:hover{ transform:scale(1.04); }
+  .rec:focus-visible{ outline:2px solid var(--accent); outline-offset:4px; transform:scale(1.04); }
   .rec:active::after{ transform:scale(0.9); }
 
   .beat{ min-height:1.1em; }
@@ -140,7 +141,7 @@
     <!-- ready -->
     <section class="stage ready">
       <div class="topline">
-        <input id="topic" type="text" placeholder="a topic to speak on" autocomplete="off" spellcheck="false">
+        <input id="topic" type="text" placeholder="a topic to speak on" aria-label="a topic to speak on" autocomplete="off" spellcheck="false">
         <button class="mark" id="giveone">give me one</button>
       </div>
       <div class="targets" id="targets"></div>
@@ -174,9 +175,9 @@
 
     <!-- paste fallback -->
     <section id="paste" hidden>
-      <textarea id="ptext" placeholder="paste or type what you said" spellcheck="false"></textarea>
+      <textarea id="ptext" placeholder="paste or type what you said" aria-label="paste or type what you said" spellcheck="false"></textarea>
       <div class="pasterow">
-        <span class="mark">spoke for <input id="pdur" type="number" min="10" max="900" value="180"> sec</span>
+        <span class="mark">spoke for <input id="pdur" type="number" min="10" max="900" value="180" aria-label="seconds spoken"> sec</span>
         <button class="mark" id="pscore">score it</button>
       </div>
       <p class="note" id="pnote"></p>
@@ -340,11 +341,13 @@
       svg.style.display = 'block';
     } else { svg.style.display = 'none'; }
     var list = sessions.slice().reverse().slice(0, 30).map(function(s){
-      return '<li><span class="hdate">'+s.date+'</span><span class="htopic">'+esc(s.topic||'—')+'</span><span>'+s.composite+'</span></li>';
+      return '<li><span class="hdate">'+esc(s.date||'')+'</span><span class="htopic">'+esc(s.topic||'—')+'</span><span>'+esc(s.composite)+'</span></li>';
     }).join('');
     $('#hlist').innerHTML = list;
   }
   function esc(s){ var d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
+  /* esc() is text-safe only — innerHTML leaves quotes alone. attributes need this. */
+  function escAttr(s){ return esc(s).replace(/"/g, '&quot;'); }
 
   // --- save -----------------------------------------------------------------
   function commit(r, topic, transcript, dur){
@@ -510,7 +513,7 @@
   // --- targets --------------------------------------------------------------
   function renderTargets(){
     $('#targets').innerHTML = TARGETS.map(function(t,i){
-      return '<button class="target'+(i===0?' on':'')+'" data-t="'+esc(t)+'">'+esc(t)+'</button>';
+      return '<button class="target'+(i===0?' on':'')+'" data-t="'+escAttr(t)+'">'+esc(t)+'</button>';
     }).join('');
   }
 

@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>type — rhumzhy</title>
+<link rel="stylesheet" href="/assets/base.css">
+<style>
+  /* newsreader (OFL, /assets/fonts/OFL.txt) — variable, optical size 6..72.
+     the opsz axis is the whole reason for the file: the title is drawn with a
+     display cut and the body with a text cut, automatically, from one face. */
+  @font-face{
+    font-family:'Newsreader';
+    src:url('/assets/fonts/newsreader.woff2') format('woff2');
+    font-weight:200 800; font-style:normal; font-display:swap;
+  }
+  @font-face{
+    font-family:'Newsreader';
+    src:url('/assets/fonts/newsreader-italic.woff2') format('woff2');
+    font-weight:200 800; font-style:italic; font-display:swap;
+  }
+
+  :root{ --serif:'Newsreader', Georgia, 'Times New Roman', serif; }
+
+  /* the sheet — 66ch is the measure; everything else is space */
+  .sheet{
+    font-family:var(--serif);
+    font-optical-sizing:auto;
+    max-width:66ch;
+    margin:0 auto;
+    padding:16vh clamp(1.4rem, 6vw, 3rem) 60vh;   /* 60vh tail: the last line can still reach the lock */
+  }
+
+  #title{
+    font-size:clamp(2rem, 6vw, 3.2rem);
+    line-height:1.12;
+    letter-spacing:-0.02em;
+    margin-bottom:clamp(1.6rem, 5vh, 2.6rem);
+  }
+  #body{
+    font-size:clamp(1.15rem, 2.4vw, 1.3rem);
+    line-height:1.75;
+  }
+  #body > *{ margin-bottom:0.9em; }
+
+  #title:focus, #body:focus{ outline:none; }
+  #title, #body{ caret-color:var(--accent); }   /* the one gesture */
+
+  .ph::before{
+    content:attr(data-ph);
+    color:var(--muted);
+    pointer-events:none;
+  }
+
+  /* furniture — fixed, never part of the paper */
+  .back{ position:fixed; top:clamp(1.2rem,3vh,2rem); left:clamp(1.2rem,3vw,2rem); z-index:2; }
+  .chrome{
+    position:fixed; z-index:2;
+    right:clamp(1.2rem,3vw,2rem); bottom:clamp(1.2rem,3vh,2rem);
+    display:flex; align-items:baseline; gap:1.4rem;
+  }
+  button.mark{
+    background:none; border:0; cursor:pointer; padding:0.2em 0;
+    font-family:var(--mono); font-size:0.72rem; letter-spacing:0.2em; color:var(--muted);
+    -webkit-tap-highlight-color:transparent;
+    transition:color .28s var(--ease);
+  }
+  button.mark:hover, button.mark:focus-visible{ color:var(--ink); outline:none; }
+
+  /* the one moment: while you type, the world recedes. move the mouse and it returns. */
+  .back, .chrome{ transition:opacity .28s var(--ease); }
+  #body > *{ transition:color .3s var(--ease); }
+  body.writing .back, body.writing .chrome{ opacity:0; pointer-events:none; }
+  body.writing #body > *:not(.now){ color:var(--muted); }
+
+  @media (prefers-reduced-motion: reduce){
+    .back, .chrome, #body > *, button.mark{ transition:none; }
+  }
+</style>
+</head>
+<body>
+
+  <a class="back" href="/experiments/" aria-label="back">←</a>
+
+  <main class="rise sheet">
+    <div id="title" contenteditable="true" data-ph="title" aria-label="title" role="textbox"></div>
+    <div id="body"  contenteditable="true" data-ph="begin" aria-label="body"  role="textbox" aria-multiline="true"></div>
+  </main>
+
+  <div class="chrome">
+    <span class="mark" id="count"></span>
+    <button class="mark" id="copy">copy</button>
+  </div>
+
+<script>
+/* ## data — the agent contract
+   localStorage key "rhumzhy-type/1":
+   { _schema:"rhumzhy-type/1", title:string, blocks:[string], modified:ISO }
+   blocks are paragraphs in order — plain text, never markup. `copy` emits
+   markdown (# title, blank line between paragraphs) for pasting into substack.
+   the piece is the words; the markup is only how they're shown today. */
+(function(){
+  "use strict";
+  var $ = function(s){ return document.querySelector(s); };
+  var KEY = 'rhumzhy-type/1', SCHEMA = 'rhumzhy-type/1';
+  var titleEl = $('#title'), bodyEl = $('#body'), countEl = $('#count'), copyEl = $('#copy');
+
+  var reduce = matchMedia('(prefers-reduced-motion: reduce)');
+  var roomy  = matchMedia('(hover:hover) and (min-width:640px)');   /* typewriter scroll fights soft keyboards */
+
+  function iso(){ return new Date().toISOString(); }
+  function clean(s){ return s.replace(/ /g, ' '); }
+
+  // ---- blocks: the paragraphs, in order ----------------------------------------
+  function blocks(){
+    if(!bodyEl.children.length){
+      var t = clean(bodyEl.textContent);
+      return t.trim() ? t.split(/\n+/) : [];
+    }
+    var out = [];
+    for(var i=0; i<bodyEl.children.length; i++){
+      out.push(clean(bodyEl.children[i].textContent).trim());
+    }
+    return out;
+  }
+  function setBlocks(list){
+    bodyEl.textContent = '';
+    (list && list.length ? list : ['']).forEach(function(t){
+      var d = document.createElement('div');
+      if(t) d.textContent = t; else d.appendChild(document.createElement('br'));
+      bodyEl.appendChild(d);
+    });
+  }
+
+  // ---- store ---------------------------------------------------------------------
+  var saveT = 0;
+  function save(){
+    clearTimeout(saveT);
+    saveT = setTimeout(function(){
+      try{
+        localStorage.setItem(KEY, JSON.stringify({
+          _schema:SCHEMA, title:clean(titleEl.textContent).trim(),
+          blocks:blocks(), modified:iso()
+        }));
+      }catch(e){}
+    }, 400);
+  }
+  function load(){
+    var raw;
+    try{ raw = localStorage.getItem(KEY); }catch(e){ return; }
+    if(!raw) return;
+    try{
+      var d = JSON.parse(raw);
+      if(d.title) titleEl.textContent = d.title;
+      if(d.blocks && d.blocks.length) setBlocks(d.blocks);
+    }catch(e){}
+  }
+
+  // ---- markdown out ----------------------------------------------------------------
+  function markdown(){
+    var t = clean(titleEl.textContent).trim();
+    var body = blocks().filter(Boolean).join('\n\n');
+    return (t ? '# ' + t + '\n\n' : '') + body;
+  }
+
+  // ---- placeholder + count ----------------------------------------------------------
+  function ph(){
+    titleEl.classList.toggle('ph', !clean(titleEl.textContent).trim());
+    bodyEl.classList.toggle('ph',  !clean(bodyEl.textContent).trim());
+  }
+  function count(){
+    var w = clean(bodyEl.textContent).trim().split(/\s+/).filter(Boolean).length;
+    countEl.textContent = w ? w + (w === 1 ? ' word' : ' words') : '';
+  }
+
+  // ---- the current block ------------------------------------------------------------
+  function blockOf(node){
+    while(node && node !== bodyEl){
+      if(node.parentNode === bodyEl) return node.nodeType === 1 ? node : null;
+      node = node.parentNode;
+    }
+    return null;
+  }
+  function markNow(){
+    var was = bodyEl.querySelectorAll('.now');
+    for(var i=0;i<was.length;i++) was[i].classList.remove('now');
+    var s = window.getSelection();
+    if(!s || !s.rangeCount) return;
+    var b = blockOf(s.anchorNode);
+    if(b) b.classList.add('now');
+  }
+
+  // ---- typewriter: the line you're on stays put, the paper moves ---------------------
+  function typewriter(){
+    if(!roomy.matches || reduce.matches) return;
+    var s = window.getSelection();
+    if(!s || !s.rangeCount) return;
+    var r = s.getRangeAt(0).getBoundingClientRect(), y = r.top;
+    if(!r.height){                                   /* collapsed at line start → no rect */
+      var b = blockOf(s.anchorNode);
+      if(!b) return;
+      y = b.getBoundingClientRect().top;
+    }
+    var d = y - window.innerHeight * 0.4;
+    if(Math.abs(d) > 1) window.scrollBy(0, d);
+  }
+
+  // ---- writing mode ------------------------------------------------------------------
+  function writing(on){ document.body.classList.toggle('writing', on); }
+
+  function afterInput(){ ph(); count(); markNow(); typewriter(); save(); }
+
+  // ---- wire -------------------------------------------------------------------------
+  load(); ph(); count();
+
+  [titleEl, bodyEl].forEach(function(el){
+    el.addEventListener('input', afterInput);
+    el.addEventListener('paste', function(e){        /* plain text only — never inherit someone else's markup */
+      e.preventDefault();
+      var t = (e.clipboardData || window.clipboardData).getData('text/plain');
+      document.execCommand('insertText', false, t);
+    });
+    el.addEventListener('keydown', function(){ writing(true); });
+  });
+
+  titleEl.addEventListener('keydown', function(e){
+    if(e.key === 'Enter'){ e.preventDefault(); bodyEl.focus(); }   /* title is one line; enter moves in */
+  });
+
+  document.addEventListener('selectionchange', function(){
+    if(document.activeElement === bodyEl){ markNow(); }
+  });
+
+  ['mousemove','wheel','touchmove'].forEach(function(ev){
+    window.addEventListener(ev, function(){ writing(false); }, {passive:true});
+  });
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'Escape') writing(false);
+  });
+
+  copyEl.addEventListener('click', function(){
+    var text = markdown();
+    if(!text.trim()) return;
+    var done = function(){
+      copyEl.textContent = 'copied';
+      setTimeout(function(){ copyEl.textContent = 'copy'; }, 1200);
+    };
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(done, function(){});
+    }else{
+      var ta = document.createElement('textarea');
+      ta.value = text; document.body.appendChild(ta); ta.select();
+      try{ document.execCommand('copy'); done(); }catch(e){}
+      document.body.removeChild(ta);
+    }
+  });
+
+  bodyEl.focus();
+})();
+</script>
+
+</body>
+</html>
