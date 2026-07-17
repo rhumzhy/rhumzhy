@@ -2,7 +2,7 @@
 
 ## now
 
-- [ ] it12 · space — the sound room: 3-axis visualizer (x placement · y frequency · z loudness) + depth volume, wall eq, width brackets
+- [x] it12 · space — the sound room: 3-axis visualizer (x placement · y frequency · z loudness) + depth volume, wall eq, width brackets
 
 ## next
 
@@ -30,6 +30,7 @@
 
 ## log
 
+- 2026-07-16 · it12 · space shipped — /experiments/space/: the sound room. a perspective cube trains the ear-eye map — x is stereo placement, y is frequency (low at the floor, high at the ceiling), z is loudness (loud comes toward you). 40 log-spaced bands as dots, register-colored (lows ink · mids accent · highs muted), the loudest dot solid accent; proximity² opacity sells depth. mini plugins obey the same spatial law: eq rides the left wall low-to-high, the volume fader moves near/far on the right wall, width brackets slide the back edge (corners 100%, middle mono, past the walls 200%). web audio chain (shelves/peak eq → m/s width → master), analysers post-chain so edits move the dots; local file or library playback, centered mono transport
 - 2026-07-16 · it14 · notes shipped — /experiments/notes/: dump now, sort later. capture mode is the bare page (cursor ready, enter saves and clears, everything lands in one timestamped pile); sort mode is the workbench — j/k/x keyboard triage, 1–9 files to groups, n names a new one, side-by-side editable panes with merge-selected-in and split-on-`---`, archive. IndexedDB (schema documented in-page and stamped into exports: rhumzhy-notes/1, audio field reserved for voice iteration), export json + markdown, import merges by id. first tool built under the standing principles from day one; mobile = tap select, tap group to file
 - 2026-07-16 · it13 · speech shipped — /experiments/speech/: the retrieval drill. 3-min speak → web-speech transcript → weighted composite (fillers 35 · pauses 20 · vocab/mattr 20 · rhythm-variance 15 · metaphor 10*, approx). daily sub-target is a cue only so the trend stays comparable; segments come from pause-gap phrasing, pause discipline from a best-effort audio meter (falls back to segment count). localStorage record + export/import, paste fallback where the speech api is absent; recordings never leave the device. all client-side, zero cost. weighted toward the hesitation axis — retrieval-speed is the gate
 - 2026-07-08 · it1 · foundation shipped — base.css, hub refactor, five trunk stubs, curation link internal, vision/roadmap/claude.md
