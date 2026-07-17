@@ -18,18 +18,25 @@
 - [ ] it11 · tend the tree — consistency sweep, graduate earned experiments, prune later
 - [x] it14 · notes — dump now, sort later: capture (enter saves, one pile) + sort workbench (j/k/x triage, 1–9 file to group, side-by-side panes, merge/split/archive), IndexedDB, documented schema, export json/md + import; voice memos next iteration
 - [x] it13 · speech — the retrieval drill: 3-min speak → web-speech transcript → composite score (fillers 35 · pauses 20 · vocab 20 · rhythm 15 · metaphor 10*), best-to-beat, localStorage record + export/import, paste fallback; all client-side, zero cost
+- [ ] it15 · type — the writing room (descends from notes): a page that is paper. real typeface, ~66ch measure, typewriter scroll, everything but the current paragraph recedes, chrome fades while writing, caret is the only colour. title + body, markdown out, copy clean to substack. local-first. for whoever writes, not just the author. the gallery ("every piece saved as the art it becomes") is a later iteration, not this one
 
 ## later
 
 - notes: voice memos — record in capture mode, web-speech transcription, audio field already reserved in schema
 - speech: polish pass — document localStorage schema in-page (agent-accessible principle), sparkline last-point clipping, record-button focus ring, silence-threshold tuning
 - trading sim: real replay mode — anonymous random windows of real historical candles committed as data, identity hidden; pressure-test subskill transfer. respect the user's timeframes: 1h and above, 5m floor
+- lineage mark — experiments that descend from another whisper it on the /experiments/ index only (hover/focus over the name reveals a muted mono "fka notes"); never on the page itself, the page still never announces itself. desktop-only by design — hidden things may be hard to find. promote to base.css when a second descendant exists, not before
+- agent marks your writing — the teacher-grading loop, and it needs no server: annotations are just data ({kind:"highlight", range:[..]} / {kind:"bubble", text:".."}) in the export. agent writes them, page renders them, import merges by id. turn-based like handing in a paper — real-time is a feeling, not the value
+- eisenhower matrix — a view over notes, not a new tool: agent assigns, site draws the 2×2. wants its own `quadrant` field so `cluster` stays topical (a note has only one cluster; spending it on the matrix costs you topic grouping)
+- visitor's own agent via remote mcp — the honest shape of "connect your claude to the site", but it needs a worker (breaks local-first + no-backend) and would put private writing on a server. only if something public ever earns it. a local skill does the same job for one person, for free
+- file system access api — page and agent share one real file on disk; marks appear while you watch, no server, still local-first. chrome desktop only, no ios. the cheap version of the magic, if export/import ever grates
 - mix feedback/scoring (tiny cloudflare worker + kv, only when earned)
 - more data ideas (unnamed — only if a real one appears)
 - publish trading sim stats publicly (if the data earns it)
 
 ## log
 
+- 2026-07-16 · it14.1 · the page is the input, actually — capture sat as a fixed 9rem box centred in an empty desktop page and long dumps scrolled inside the rectangle; `.capture` stops centring, `#in` takes flex:1, textarea fills the column. no behaviour change. notes is done — the next writing idea leaves home as it15 · type
 - 2026-07-16 · it14 · notes shipped — /experiments/notes/: dump now, sort later. capture mode is the bare page (cursor ready, enter saves and clears, everything lands in one timestamped pile); sort mode is the workbench — j/k/x keyboard triage, 1–9 files to groups, n names a new one, side-by-side editable panes with merge-selected-in and split-on-`---`, archive. IndexedDB (schema documented in-page and stamped into exports: rhumzhy-notes/1, audio field reserved for voice iteration), export json + markdown, import merges by id. first tool built under the standing principles from day one; mobile = tap select, tap group to file
 - 2026-07-16 · it13 · speech shipped — /experiments/speech/: the retrieval drill. 3-min speak → web-speech transcript → weighted composite (fillers 35 · pauses 20 · vocab/mattr 20 · rhythm-variance 15 · metaphor 10*, approx). daily sub-target is a cue only so the trend stays comparable; segments come from pause-gap phrasing, pause discipline from a best-effort audio meter (falls back to segment count). localStorage record + export/import, paste fallback where the speech api is absent; recordings never leave the device. all client-side, zero cost. weighted toward the hesitation axis — retrieval-speed is the gate
 - 2026-07-08 · it1 · foundation shipped — base.css, hub refactor, five trunk stubs, curation link internal, vision/roadmap/claude.md
