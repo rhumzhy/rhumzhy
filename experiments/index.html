@@ -19,6 +19,24 @@
     flex-direction:column;
     gap:clamp(0.9rem, 2.2vw, 1.4rem);
   }
+
+  /* lineage — a descendant whispers where it came from. the index only:
+     the page itself never announces its own past. out of flow, so the
+     link's underline still measures the word and not the whisper. */
+  .fka{
+    position:absolute; left:100%; bottom:0.3em;
+    margin-left:0.9em; white-space:nowrap;
+    font-family:var(--mono); font-size:0.62rem; letter-spacing:0.2em;
+    color:var(--muted); pointer-events:none;
+    opacity:0;
+    transition:opacity .28s var(--ease);
+  }
+  .link:hover .fka,
+  .link:focus-visible .fka{ opacity:1; }
+
+  @media (prefers-reduced-motion: reduce){
+    .fka{ transition:none; }
+  }
 </style>
 </head>
 <body>
@@ -28,6 +46,7 @@
     <nav>
       <a class="link" href="/experiments/log/">log</a>
       <a class="link" href="/experiments/notes/">notes</a>
+      <a class="link" href="/experiments/type/">type<span class="fka">fka notes</span></a>
       <a class="link" href="/experiments/predictions/">predictions</a>
       <a class="link" href="/experiments/trading/">trading</a>
       <a class="link" href="/experiments/space/">space</a>
