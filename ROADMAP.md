@@ -2,6 +2,7 @@
 
 ## now
 
+- [ ] it15 · thinkinbubbles — ideating made easy: type → bubble shoots into a lava-lamp arena, drag to arrange, tap-tap to link (linked thoughts flow into one blob), local-first + json/md export
 - [x] it12 · space — the sound room: 3-axis visualizer (x placement · y frequency · z loudness) + depth volume, wall eq, width brackets
 
 ## next
